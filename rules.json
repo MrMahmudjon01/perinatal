@@ -1,0 +1,56 @@
+{
+  "_izoh": "Klinik chegaralar TAXMINIY (demo uchun). Rasmiy protokol bo'yicha mentor/mutaxassis tasdiqlaydi. Fayl o'zgarsa, server qayta ishga tushirilmasdan yangi qiymatlar o'qiladi.",
+
+  "region": {
+    "_izoh": "Hudud rangi = hududdagi QIZIL zonadagi homiladorlar / hududdagi jami homiladorlar (include_children=true bo'lsa bolalar ham qo'shiladi)",
+    "red_from": 0.30,
+    "yellow_from": 0.10,
+    "include_children": false
+  },
+
+  "mother": {
+    "red": [
+      {"label": "Og'ir gipertenziya (QB ≥160/110)", "any": [["bp_sys", ">=", 160], ["bp_dia", ">=", 110]]},
+      {"label": "Og'ir anemiya (Hb <70 g/l)", "all": [["hb", "<", 70]]},
+      {"label": "Preeklampsiya belgilari (QB ≥140/90 + proteinuriya)", "all": [["bp_high", "==", true], ["urine_protein", "in", ["++", "+++"]]]},
+      {"label": "QB ≥140/90 + kuchli bosh og'rig'i / ko'rish buzilishi", "all": [["bp_high", "==", true], ["headache_vision", "==", true]]},
+      {"label": "Homila harakati yo'q", "all": [["fetal_movement", "==", "absent"]]},
+      {"label": "Qon ketishi", "all": [["bleeding", "==", true]]},
+      {"label": "Homila yurak urishi me'yordan tashqari (<110 yoki >160)", "any": [["fetal_heart_rate", "<", 110], ["fetal_heart_rate", ">", 160]]},
+      {"label": "Yuqori harorat (≥38.5°C)", "all": [["temperature", ">=", 38.5]]}
+    ],
+    "yellow": [
+      {"label": "Gipertenziya (QB ≥140/90)", "all": [["bp_high", "==", true]]},
+      {"label": "O'rtacha anemiya (Hb 70–99 g/l)", "all": [["hb", "<", 100]]},
+      {"label": "Siydikda oqsil", "all": [["urine_protein", "in", ["+", "++", "+++"]]]},
+      {"label": "Homila harakati sustlashgan", "all": [["fetal_movement", "==", "decreased"]]},
+      {"label": "Shish", "all": [["edema", "==", true]]},
+      {"label": "Subfebril harorat (≥37.5°C)", "all": [["temperature", ">=", 37.5]]},
+      {"label": "Yosh omili (<18 yoki >35)", "any": [["age", "<", 18], ["age", ">", 35]]},
+      {"label": "Oldingi homiladorlikda asorat", "all": [["has_prev_complications", "==", true]]},
+      {"label": "Ko'rikka kelmadi", "all": [["missed_visit", "==", true]]}
+    ]
+  },
+
+  "child": {
+    "red": [
+      {"label": "Tutqanoq", "all": [["convulsions", "==", true]]},
+      {"label": "Nafas olish qiyinligi", "all": [["breathing_problem", "==", true]]},
+      {"label": "Isitma (≥38°C)", "all": [["temperature", ">=", 38.0]]},
+      {"label": "Gipotermiya (<35.5°C)", "all": [["temperature", "<", 35.5]]},
+      {"label": "Vazn yo'qotish >10%", "all": [["weight_loss_pct", ">", 10]]},
+      {"label": "Juda kam vazn bilan tug'ilgan (<1500 g), 3 oygacha", "all": [["birth_weight", "<", 1500], ["age_days", "<", 92]]},
+      {"label": "Yomon emadi + sariqlik", "all": [["feeding", "==", "poor"], ["jaundice", "==", true]]}
+    ],
+    "yellow": [
+      {"label": "Sariqlik", "all": [["jaundice", "==", true]]},
+      {"label": "Yomon emadi", "all": [["feeding", "==", "poor"]]},
+      {"label": "Kam vazn bilan tug'ilgan (<2500 g), 6 oygacha", "all": [["birth_weight", "<", 2500], ["age_days", "<", 183]]},
+      {"label": "Chala tug'ilgan (<37 hafta), 6 oygacha", "all": [["gestational_age_at_birth", "<", 37], ["age_days", "<", 183]]},
+      {"label": "Past Apgar (5 daq. <7), 3 oygacha", "all": [["apgar_5", "<", 7], ["age_days", "<", 92]]},
+      {"label": "Subfebril harorat (≥37.5°C)", "all": [["temperature", ">=", 37.5]]},
+      {"label": "Emlash kechikkan", "all": [["overdue_vaccines", ">", 0]]},
+      {"label": "Ko'rikka kelmadi", "all": [["missed_visit", "==", true]]}
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{% t "Yo'llanmalar" %}{% endblock %}
+{% block page_title %}{% t "Yo'llanmalar va orderlar" %}{% endblock %}
+{% block content %}
+<div class="small text-muted mb-3">Poliklinika → tuman/shahar → OvaBMU. Holat: berildi → qabul qilindi → harakat qilindi.</div>
+<div class="card"><div class="table-responsive"><table class="table table-hover mb-0 align-middle">
+  <thead><tr><th>Sana</th><th>Bemor</th><th>Kimdan</th><th>Kimga</th><th>Sabab</th><th>Holat</th><th></th></tr></thead><tbody>
+  {% for r in referrals %}<tr>
+    <td class="small">{{ r.created_at|date:"d.m H:i" }}</td>
+    <td><a href="{{ r.subject_url }}">{{ r.subject_name }}</a></td>
+    <td class="small">{{ r.clinic.name }}<br><span class="text-muted">{{ r.from_user|default:"" }}</span></td>
+    <td class="small">{{ r.get_to_level_display }}</td>
+    <td class="small">{{ r.reason|truncatechars:80 }}{% if r.action_note %}<div class="text-muted">Natija: {{ r.action_note }}</div>{% endif %}</td>
+    <td><span class="badge {% if r.status == 'acted' %}text-bg-success{% elif r.status == 'accepted' %}text-bg-primary{% else %}text-bg-warning{% endif %}">{{ r.get_status_display }}</span><div class="mt-1">{% include "alerts/_mc.html" with o=r %}</div></td>
+    <td class="text-end">{% if not is_clinic and r.status != 'acted' %}
+      <form method="post" action="{% url 'referral_status' r.id %}" class="d-flex gap-1 justify-content-end">{% csrf_token %}
+        {% if r.status == 'issued' %}<button name="action" value="accept" class="btn btn-sm btn-outline-primary">Qabul qilish</button>{% endif %}
+        <input name="note" class="form-control form-control-sm" placeholder="Natija" style="max-width:140px"><button name="action" value="act" class="btn btn-sm btn-success">Bajarildi</button>
+      </form>{% endif %}</td>
+  </tr>{% empty %}<tr><td colspan="7" class="text-center text-muted py-4">Yo'llanma yo'q</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endblock %}

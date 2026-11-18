@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}{% t "Hududlar" %}{% endblock %}
+{% block page_title %}{% if level == 'district' %}{% t "Tumanlar" %}{% elif level == 'clinic' %}{% t "Poliklinikalar" %}{% else %}{% t "Mavzelar" %}{% endif %}{% endblock %}
+{% block content %}
+{% include "dashboard/_kpis.html" with compact=True %}
+{% include "dashboard/_region_table.html" %}
+{% endblock %}

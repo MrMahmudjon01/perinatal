@@ -1,0 +1,188 @@
+{% extends "base.html" %}{% load zones %}
+{% block title %}{% t "Yangi ko'rik" %}{% endblock %}
+{% block page_title %}{% t "Yangi ko'rik" %} — {% if kind == 'mother' %}{{ p.full_name }}{% else %}{{ c.full_name }} <small class="text-muted">({{ c.age_label }})</small>{% endif %}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">  {% if kind == 'mother' %}{% zone p.current_color True %}{% else %}{% zone c.current_color True %}{% endif %}</div>
+
+<form method="post" id="visit-form" hx-post="{{ preview_url }}" hx-trigger="change delay:300ms, input delay:600ms, ai-filled" hx-target="#preview" hx-swap="innerHTML">
+{% csrf_token %}
+{{ form.source }}{{ form.transcript }}{{ form.ai_fields }}
+<div class="row g-3">
+  <div class="col-lg-8">
+    <!-- Ovozli kiritish paneli -->
+    <div class="card p-3 mb-3">
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <button type="button" id="rec-btn" class="btn btn-lg btn-outline-danger rec-btn"><i class="bi bi-mic-fill"></i> <span>{% t "Ko'rikni ovozda yozish" %}</span></button>
+        <span id="rec-timer" class="fw-semibold d-none">00:00</span>
+        <select id="scenario" class="form-select form-select-sm w-auto" title="{% t "Mikrofonsiz: tayyor ko'rik matni" %}">
+          {% for k, l in scenarios %}<option value="{{ k }}">{% t "Demo" %}: {{ l }}</option>{% endfor %}
+        </select>
+        <button type="button" id="demo-btn" class="btn btn-sm btn-outline-secondary"><i class="bi bi-play-circle"></i> {% t "Mikrofonsiz demo" %}</button>
+        <span class="ms-auto small text-muted"><i class="bi bi-cpu"></i> {% if voice_mode == 'voicelab' %}<span style="color:var(--z-green)">●</span> VoiceLab STT (uz) + AI (aisha-orbit){% else %}{% t "Mock rejim (internetsiz)" %}{% endif %}</span>
+      </div>
+      <div id="voice-status" class="small mt-2 text-muted">{% t "Ko'rik davomida gapiring — AI shablonni to'ldiradi, siz tekshirib tasdiqlaysiz. Yoki maydonlarni qo'lda to'ldiring." %}</div>
+      <div id="transcript-box" class="mt-2 d-none">
+        <label class="small-label">{% t "Matn (tahrirlash mumkin)" %}</label>
+        <textarea id="transcript-edit" class="form-control" rows="3"></textarea>
+        <div class="d-flex gap-2 mt-2 align-items-center">
+          <button type="button" id="reparse-btn" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-repeat"></i> {% t "Matndan qayta to'ldirish" %}</button>
+          <span id="engine-note" class="small text-muted"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-3">
+      <div class="small mb-2"><span class="badge ai-filled text-dark border">{% t "sariq" %}</span> — {% t "AI to'ldirgan, tekshiring" %} ·
+        <span class="badge border ai-warn text-dark">{% t "qizil hoshiya" %}</span> — {% t "mantiqsiz qiymat" %} · {% t "bo'sh — aytilmagan, kerak bo'lsa qo'lda kiriting" %}</div>
+      {% for e in form.non_field_errors %}<div class="alert alert-danger">{{ e }}</div>{% endfor %}
+      <div class="row g-3">
+        {% for f in form.visible_fields %}{% if f.name != 'color_choice' and f.name != 'color_override_note' %}
+          {% if f.name == 'specialists_seen' %}
+          <div class="col-12"><div class="small-label mb-1">{{ f.label }}</div>
+            <div class="d-flex flex-wrap gap-3 specialists">{% for o in f %}<div class="form-check">{{ o.tag }} <label class="form-check-label" for="{{ o.id_for_label }}">{{ o.choice_label }}</label></div>{% endfor %}</div></div>
+          {% elif f.field.widget.input_type == 'checkbox' %}
+          <div class="col-6 col-md-4"><div class="form-check mt-2 p-2 ps-4 rounded field-wrap" data-field="{{ f.name }}">{{ f }} <label class="form-check-label" for="{{ f.id_for_label }}">{{ f.label }}</label>
+            <div class="evidence" data-ev="{{ f.name }}"></div><div class="text-danger small" data-warn="{{ f.name }}"></div></div></div>
+          {% else %}
+          <div class="{% if f.name in 'complaints complications diagnosis recommendation' %}col-md-6{% else %}col-6 col-md-3{% endif %} field-wrap" data-field="{{ f.name }}">
+            <label class="form-label small mb-1" for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}
+            <div class="evidence" data-ev="{{ f.name }}"></div><div class="text-danger small" data-warn="{{ f.name }}"></div>
+            {% for e in f.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+          {% endif %}
+        {% endif %}{% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card p-3 sticky-side">
+      <div class="small-label mb-2">{% t "Tizim hisoblagan zona (qoidalar: rules.json)" %}</div>
+      <div id="preview" class="mb-3"><div class="text-muted small">{% t "Maydonlar to'ldirilganda zona shu yerda ko'rinadi" %}</div></div>
+      <label class="form-label small">{{ form.color_choice.label }}</label>{{ form.color_choice }}
+      <div class="mt-2" id="override-note">{{ form.color_override_note }}
+        {% for e in form.color_override_note.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+      <div class="form-text">{% t "Qaror shifokorda: zonani o'zgartirsangiz, sababini yozing." %}</div>
+      <button class="btn btn-success btn-lg w-100 mt-3" type="submit"><i class="bi bi-check2-circle"></i> {% t "Tasdiqlash va saqlash" %}</button>
+      <div class="small text-muted mt-2"><i class="bi bi-shield-lock"></i> {% t "Tasdiqlanmaguncha hech narsa saqlanmaydi va signal yuborilmaydi. Audio matnga o'tgach o'chiriladi." %}</div>
+    </div>
+  </div>
+</div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const KIND = "{{ kind }}";
+  const T = {
+    filled: "{% t "ta maydon to'ldirildi" %}", check: "{% t "ta tekshirish kerak" %}", review: "{% t "Tekshiring va tasdiqlang." %}",
+    working: "{% t "Matnga o'girilmoqda va maydonlar ajratilmoqda..." %}", error: "{% t "Xato" %}",
+    manual: "{% t "Maydonlarni qo'lda to'ldirishingiz mumkin." %}", nomic: "{% t "Brauzer mikrofonni qo'llamaydi (HTTPS yoki localhost kerak)." %}",
+    again: "{% t "Qayta yozish" %}", stop: "{% t "To'xtatish" %}", recording: "{% t "Yozilmoqda... ko'rik ma'lumotlarini ayting, tugatgach «To'xtatish»ni bosing." %}",
+    denied: "{% t "Mikrofonga ruxsat berilmadi" %}", llm: "{% t "Ajratuvchi: VoiceLab LLM" %}", rules: "{% t "Ajratuvchi: qoidalar" %}",
+    note: "{% t "Zonani o'zgartirish sababi" %}",
+  };
+  const form = document.getElementById("visit-form");
+  const csrf = document.querySelector("meta[name=csrf-token]").content;
+  const status = document.getElementById("voice-status");
+  const recBtn = document.getElementById("rec-btn");
+  const timer = document.getElementById("rec-timer");
+  const tBox = document.getElementById("transcript-box");
+  const tEdit = document.getElementById("transcript-edit");
+  const src = document.getElementById("id_source");
+  let aiKeys = new Set();
+
+  // Eslatma: forma hx-trigger faqat change/input — "submit" oddiy POST bo'lib ketadi
+  const noteWrap = document.getElementById("override-note");
+  const choice = document.getElementById("id_color_choice");
+  const toggleNote = () => noteWrap.style.display = choice.value === "auto" ? "none" : "";
+  choice.addEventListener("change", toggleNote); toggleNote();
+  document.getElementById("id_color_override_note").placeholder = T.note;
+
+  function setStatus(html, cls) { status.className = "small mt-2 " + (cls || "text-muted"); status.innerHTML = html; }
+
+  function clearMarks() {
+    form.querySelectorAll(".ai-filled, .ai-warn").forEach((el) => el.classList.remove("ai-filled", "ai-warn"));
+    form.querySelectorAll("[data-ev], [data-warn]").forEach((el) => el.textContent = "");
+  }
+
+  function apply(res) {
+    clearMarks();
+    aiKeys = new Set(Object.keys(res.fields));
+    for (const [k, v] of Object.entries(res.fields)) {
+      const el = document.getElementById("id_" + k); if (!el) continue;
+      if (el.type === "checkbox") el.checked = !!v; else el.value = v;
+      (el.type === "checkbox" ? el.closest(".field-wrap") : el).classList.add("ai-filled");
+      const ev = form.querySelector(`[data-ev="${k}"]`); if (ev && res.evidence[k]) ev.textContent = "«" + res.evidence[k] + "»";
+    }
+    for (const [k, w] of Object.entries(res.warnings || {})) {
+      const el = document.getElementById("id_" + k); if (el) el.classList.add("ai-warn");
+      const wn = form.querySelector(`[data-warn="${k}"]`); if (wn) wn.textContent = w;
+    }
+    src.value = "voice";
+    document.getElementById("id_transcript").value = res.transcript;
+    document.getElementById("id_ai_fields").value = JSON.stringify(res.fields);
+    tBox.classList.remove("d-none"); tEdit.value = res.transcript;
+    document.getElementById("engine-note").textContent =
+      (res.engine === "voicelab-llm" ? T.llm : T.rules) + (res.notes.length ? " · " + res.notes.join("; ") : "");
+    const n = Object.keys(res.fields).length, w = Object.keys(res.warnings || {}).length;
+    setStatus(`<i class="bi bi-check-circle-fill" style="color:var(--z-green)"></i> ${n} ${T.filled}${w ? `, <b style="color:var(--z-red)">${w} ${T.check}</b>` : ""}. ${T.review}`);
+    htmx.trigger(form, "ai-filled");
+  }
+
+  async function send(fd) {
+    fd.append("kind", KIND);
+    const sc = document.getElementById("scenario"); if (sc) fd.append("scenario", sc.value);
+    setStatus('<span class="spinner-border spinner-border-sm"></span> ' + T.working);
+    try {
+      const r = await fetch("{% url 'voice_extract' %}", { method: "POST", body: fd, headers: { "X-CSRFToken": csrf } });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || r.statusText);
+      apply(d);
+    } catch (e) { setStatus(T.error + ": " + e.message + ". " + T.manual, "text-danger"); }
+  }
+
+  // ikki marta bosilib, ko'rik ikki marta saqlanmasin
+  form.addEventListener("submit", (e) => {
+    if (form.dataset.sent) { e.preventDefault(); return; }
+    form.dataset.sent = "1";
+    form.querySelectorAll("button[type=submit], button:not([type])").forEach((b) => { if (b.closest("form") === form) b.disabled = true; });
+  });
+
+  // shifokor AI maydonini o'zgartirsa — manba "ovoz + qo'lda"
+  form.addEventListener("input", (e) => {
+    const k = (e.target.id || "").replace("id_", "");
+    if (src.value === "voice" && aiKeys.has(k)) src.value = "mixed";
+    e.target.classList.remove("ai-filled");
+  });
+
+  document.getElementById("reparse-btn").onclick = () => { const fd = new FormData(); fd.append("text", tEdit.value); send(fd); };
+  document.getElementById("demo-btn")?.addEventListener("click", () => send(new FormData()));
+
+  // Mikrofon orqali yozish
+  let rec = null, chunks = [], t0 = 0, tick = null;
+  recBtn.onclick = async () => {
+    if (rec && rec.state === "recording") { rec.stop(); return; }
+    if (!navigator.mediaDevices?.getUserMedia) { setStatus(T.nomic, "text-danger"); return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "";
+      rec = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
+      chunks = [];
+      rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+      rec.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop()); clearInterval(tick);
+        recBtn.classList.remove("recording"); recBtn.querySelector("span").textContent = T.again; timer.classList.add("d-none");
+        const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
+        const fd = new FormData(); fd.append("audio", blob, "visit.webm"); send(fd);
+      };
+      rec.start(); t0 = Date.now();
+      recBtn.classList.add("recording"); recBtn.querySelector("span").textContent = T.stop; timer.classList.remove("d-none");
+      tick = setInterval(() => { const s = Math.floor((Date.now() - t0) / 1000); timer.textContent = String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); }, 500);
+      setStatus('<span class="pulse" style="color:var(--z-red)">●</span> ' + T.recording);
+    } catch (e) { setStatus(T.denied + ": " + e.message, "text-danger"); }
+  };
+  htmx.trigger(form, "ai-filled");
+})();
+</script>
+{% endblock %}

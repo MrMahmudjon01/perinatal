@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{% t "Telegram xabarlar" %}{% endblock %}
+{% block page_title %}{% t "Onalarga yuborilgan xabarlar" %}{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic"><i class="bi bi-send"></i></div>
+    <div><div class="l">{% t "Jami xabarlar" %}</div><div class="v">{{ kpi.total }}</div><div class="s">{% t "tanlangan davrda" %}</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic green"><i class="bi bi-check2-all"></i></div>
+    <div><div class="l">{% t "Yetkazildi" %}</div><div class="v">{{ kpi.sent }}</div><div class="s">{% t "Bot ulanmagan" %}: {{ kpi.no_chat }}{% if kpi.failed %} · {% t "Xato" %}: {{ kpi.failed }}{% endif %}</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic green"><i class="bi bi-person-check"></i></div>
+    <div><div class="l">{% t "Ona tasdiqladi" %}</div><div class="v">{{ kpi.yes }}</div><div class="s">{% t "Ona javobi kutilmoqda" %}: {{ kpi.wait }}</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic red"><i class="bi bi-flag-fill"></i></div>
+    <div><div class="l">{% t "Ona rad etdi" %}</div><div class="v" style="color:var(--z-red)">{{ kpi.no }}</div><div class="s">{% t "tekshirish kerak" %}</div></div></div></div>
+</div>
+
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item"><a class="nav-link {% if tab != 'mc' %}active{% endif %}" href="?tab=msg&period={{ period }}"><i class="bi bi-chat-text"></i> {% t "Barcha xabarlar" %}</a></li>
+  <li class="nav-item"><a class="nav-link {% if tab == 'mc' %}active{% endif %}" href="?tab=mc&period={{ period }}"><i class="bi bi-person-check"></i> {% t "Ona tasdiqlari" %}{% if kpi.no %} <span class="badge text-bg-danger">{{ kpi.no }}</span>{% endif %}</a></li>
+</ul>
+
+<form class="card mb-3" method="get"><div class="card-body d-flex flex-wrap gap-2 align-items-center">
+  <input type="hidden" name="tab" value="{{ tab }}">
+  <input name="q" value="{{ q }}" class="form-control form-control-sm" style="max-width:240px" placeholder="{% t "Ona: ism yoki telefon" %}">
+  <select name="kind" class="form-select form-select-sm" style="max-width:220px" onchange="this.form.submit()">
+    <option value="">{% t "Barcha turlar" %}</option>
+    {% for k, l in kinds %}<option value="{{ k }}" {% if k == kind %}selected{% endif %}>{% t l %}</option>{% endfor %}</select>
+  {% if tab == 'mc' %}
+  <select name="answer" class="form-select form-select-sm" style="max-width:200px" onchange="this.form.submit()">
+    <option value="">{% t "Barcha javoblar" %}</option>
+    <option value="yes" {% if answer == 'yes' %}selected{% endif %}>{% t "Ona tasdiqladi" %}</option>
+    <option value="no" {% if answer == 'no' %}selected{% endif %}>{% t "Ona rad etdi" %}</option>
+    <option value="wait" {% if answer == 'wait' %}selected{% endif %}>{% t "Ona javobi kutilmoqda" %}</option></select>
+  {% else %}
+  <select name="status" class="form-select form-select-sm" style="max-width:180px" onchange="this.form.submit()">
+    <option value="">{% t "Barcha holatlar" %}</option>
+    {% for k, l in statuses %}<option value="{{ k }}" {% if k == status %}selected{% endif %}>{% t l %}</option>{% endfor %}</select>
+  {% endif %}
+  <div class="btn-group btn-group-sm">
+    <button name="period" value="1" class="btn btn-light {% if period == '1' %}active{% endif %}">{% t "Bugun" %}</button>
+    <button name="period" value="7" class="btn btn-light {% if period == '7' %}active{% endif %}">{% t "7 kun" %}</button>
+    <button name="period" value="30" class="btn btn-light {% if period == '30' %}active{% endif %}">{% t "30 kun" %}</button>
+    <button name="period" value="all" class="btn btn-light {% if period == 'all' %}active{% endif %}">{% t "Hammasi" %}</button>
+  </div>
+  <button class="btn btn-sm btn-primary"><i class="bi bi-search"></i></button>
+  <span class="ms-auto small text-muted">{% t "Topildi" %}: <b>{{ page.paginator.count }}</b></span>
+</div></form>
+
+<div class="card"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+{% if tab == 'mc' %}
+  <thead><tr><th>{% t "Vaqt" %}</th><th>{% t "Ona" %}</th>{% if show_clinic %}<th>{% t "Poliklinika" %}</th>{% endif %}<th>{% t "Turi" %}</th><th>{% t "Yozuv" %}</th><th>{% t "Muallif" %}</th><th>{% t "Ona javobi" %}</th></tr></thead><tbody>
+  {% for m in page %}<tr class="{% if m.confirmed is False %}zrow zrow-red{% endif %}">
+    <td class="small text-nowrap">{{ m.created_at|date:"d.m.Y H:i" }}</td>
+    <td><a href="{% url 'patient_detail' m.patient_id %}" class="fw-medium">{{ m.patient.short_name }}</a><div class="small text-muted">{{ m.patient.phone }}</div></td>
+    {% if show_clinic %}<td class="small">{{ m.patient.mavze.clinic.name }}</td>{% endif %}
+    <td><span class="chip">{% t m.get_kind_display %}</span></td>
+    <td class="small">{{ m.summary }}</td>
+    <td class="small">{{ m.author.full_name|default:m.author.username|default:"—" }}</td>
+    <td>{% if m.state == 'yes' %}<span class="zone zone-green zone-sm"><i class="bi bi-person-check"></i> {% t "Ona tasdiqladi" %}</span>{% elif m.state == 'no' %}<span class="zone zone-red zone-sm"><i class="bi bi-flag-fill"></i> {% t "Ona rad etdi" %}</span>{% elif m.state == 'wait' %}<span class="chip"><i class="bi bi-hourglass-split"></i> {% t "Ona javobi kutilmoqda" %}</span>{% else %}<span class="chip"><i class="bi bi-telegram"></i> {% t "Onaga yetkazilmadi" %}</span>{% endif %}
+      {% if m.responded_at %}<div class="small text-muted">{{ m.responded_at|date:"d.m H:i" }}</div>{% endif %}</td>
+  </tr>{% empty %}<tr><td colspan="7" class="empty">{% t "Hali xabar yo'q" %}</td></tr>{% endfor %}
+{% else %}
+  <thead><tr><th>{% t "Vaqt" %}</th><th>{% t "Ona" %}</th>{% if show_clinic %}<th>{% t "Poliklinika" %}</th>{% endif %}<th>{% t "Turi" %}</th><th>{% t "Xabar" %}</th><th>{% t "Holat" %}</th></tr></thead><tbody>
+  {% for n in page %}<tr>
+    <td class="small text-nowrap">{{ n.created_at|date:"d.m.Y H:i" }}</td>
+    <td>{% if n.patient %}<a href="{% url 'patient_detail' n.patient_id %}" class="fw-medium">{{ n.patient.short_name }}</a><div class="small text-muted">{{ n.patient.phone }}</div>{% else %}<span class="small">{{ n.recipient_label }}</span>{% endif %}</td>
+    {% if show_clinic %}<td class="small">{{ n.patient.mavze.clinic.name|default:"—" }}</td>{% endif %}
+    <td><span class="chip">{% t n.get_kind_display %}</span></td>
+    <td class="small notif-text">{% if n.rest %}<details><summary><b>{{ n.title }}</b> <i class="bi bi-chevron-down text-muted"></i></summary><div class="mt-1 text-muted">{{ n.rest }}</div></details>{% else %}<b>{{ n.title }}</b>{% endif %}</td>
+    <td><span class="badge {% if n.status == 'sent' %}text-bg-success{% elif n.status == 'failed' %}text-bg-danger{% else %}text-bg-secondary{% endif %}">{% t n.get_status_display %}</span>{% if n.error %}<div class="small text-danger">{{ n.error|truncatechars:60 }}</div>{% endif %}</td>
+  </tr>{% empty %}<tr><td colspan="6" class="empty">{% t "Hali xabar yo'q" %}</td></tr>{% endfor %}
+{% endif %}
+</tbody></table></div>
+{% if page.paginator.num_pages > 1 %}
+<div class="card-body d-flex justify-content-between align-items-center border-top">
+  <span class="small text-muted">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+  <div class="btn-group btn-group-sm">
+    {% if page.has_previous %}<a class="btn btn-light" href="?{{ qs_nopage }}&page=1">«</a><a class="btn btn-light" href="?{{ qs_nopage }}&page={{ page.previous_page_number }}">‹</a>{% endif %}
+    {% if page.has_next %}<a class="btn btn-light" href="?{{ qs_nopage }}&page={{ page.next_page_number }}">›</a><a class="btn btn-light" href="?{{ qs_nopage }}&page={{ page.paginator.num_pages }}">»</a>{% endif %}
+  </div></div>{% endif %}
+</div>
+{% endblock %}

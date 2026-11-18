@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{% t "Xodimlar" %}{% endblock %}
+{% block crumbs %}<a href="{% url 'staff_list' %}">{% t "Xodimlar" %}</a>{% endblock %}
+{% block page_title %}{% if obj %}{{ obj.full_name }}{% else %}{% t "Yangi xodim" %}{% endif %}{% endblock %}
+{% block content %}
+<div class="row g-3"><div class="col-lg-7">
+<form method="post" class="card"><div class="card-body">{% csrf_token %}
+  {% for e in form.non_field_errors %}<div class="alert alert-danger py-2">{{ e }}</div>{% endfor %}
+  <div class="row g-3">
+    {% for f in form %}<div class="col-md-6" data-field="{{ f.name }}">
+      <label class="form-label small" for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}
+      {% for e in f.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>{% endfor %}
+  </div>
+  {% if not obj %}<div class="small text-muted mt-3"><i class="bi bi-key"></i> {% t "Parol avtomatik yaratiladi va saqlangandan keyin bir marta ko'rsatiladi." %}</div>{% endif %}
+  <div class="d-flex gap-2 mt-3"><button class="btn btn-primary"><i class="bi bi-check2"></i> {% t "Saqlash" %}</button>
+    <a href="{% url 'staff_list' %}" class="btn btn-light">{% t "Bekor qilish" %}</a></div>
+</div></form></div></div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {  // rolga qarab tuman / poliklinika maydoni
+  const role = document.getElementById("id_role"); if (!role) return;
+  const show = () => {
+    const r = role.value;
+    document.querySelector('[data-field="district"]')?.classList.toggle("d-none", r !== "district");
+    document.querySelector('[data-field="clinic"]')?.classList.toggle("d-none", r !== "clinic");
+    document.querySelector('[data-field="clinic_role"]')?.classList.toggle("d-none", r !== "clinic");
+    const cr = document.getElementById("id_clinic_role");
+    document.querySelector('[data-field="mavze"]')?.classList.toggle("d-none", r !== "clinic" || !cr || cr.value !== "nurse");
+  };
+  role.addEventListener("change", show); document.getElementById("id_clinic_role")?.addEventListener("change", show); show();
+})();
+</script>
+{% endblock %}

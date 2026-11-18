@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{% t "Emlash e'lonlari" %}{% endblock %}
+{% block page_title %}{% t "Emlash e'lonlari" %}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div class="small text-muted"><i class="bi bi-telegram"></i> {% t "Bot mos bolalarning onalariga 3 kun va 1 kun qolganda eslatma yuboradi" %}</div>
+  {% if can_sessions %}<a href="{% url 'session_create' %}" class="btn btn-primary"><i class="bi bi-megaphone"></i> {% t "Yangi emlash e'loni" %}</a>{% endif %}
+</div>
+<div class="card mb-3"><div class="card-header">{% t "Rejadagi e'lonlar" %}<span class="sub">{{ upcoming|length }}</span></div>
+  <div class="table-responsive"><table class="table table-hover">
+    <thead><tr><th>{% t "Sana" %}</th><th>{% t "Vaksina" %}</th>{% if not is_clinic %}<th>{% t "Poliklinika" %}</th>{% endif %}<th class="text-end">{% t "Taklif qilingan" %}</th><th>{% t "Eslatmalar" %}</th><th class="text-end">{% t "Qoldi" %}</th></tr></thead><tbody>
+    {% for s in upcoming %}<tr data-href="{% url 'session_detail' s.id %}" class="row-link">
+      <td class="fw-semibold">{{ s.date|date:"d.m.Y" }} · {{ s.time|time:"H:i" }}</td>
+      <td><b>{{ s.vaccine.code }}</b> <span class="small text-muted">{{ s.vaccine.name }}</span></td>
+      {% if not is_clinic %}<td class="small">{{ s.clinic.name }}</td>{% endif %}
+      <td class="text-end">{{ s.n }}</td>
+      <td class="small"><span class="chip {% if s.n_r3 %}zone-green{% endif %}">3 {% t "kun" %}: {{ s.n_r3 }}/{{ s.n }}</span> <span class="chip {% if s.n_r1 %}zone-green{% endif %}">1 {% t "kun" %}: {{ s.n_r1 }}/{{ s.n }}</span></td>
+      <td class="text-end fw-semibold">{{ s.days_left }} {% t "kun" %}</td>
+    </tr>{% empty %}<tr><td colspan="6" class="empty"><i class="bi bi-megaphone"></i>{% t "Rejadagi e'lon yo'q" %}</td></tr>{% endfor %}
+  </tbody></table></div></div>
+<div class="card"><div class="card-header">{% t "O'tgan va yopilgan" %}</div>
+  <div class="table-responsive"><table class="table table-hover"><tbody>
+    {% for s in past %}<tr data-href="{% url 'session_detail' s.id %}" class="row-link">
+      <td>{{ s.date|date:"d.m.Y" }}</td><td><b>{{ s.vaccine.code }}</b></td>{% if not is_clinic %}<td class="small">{{ s.clinic.name }}</td>{% endif %}
+      <td class="text-end">{{ s.n_att }}/{{ s.n }} {% t "emlandi" %}</td><td class="text-end"><span class="chip">{{ s.get_status_display }}</span></td>
+    </tr>{% empty %}<tr><td class="empty">—</td></tr>{% endfor %}
+  </tbody></table></div></div>
+{% endblock %}

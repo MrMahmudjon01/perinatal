@@ -1,0 +1,5 @@
+{% if ok %}
+  {% if n.status == 'sent' %}<div class="small mt-2" style="color:var(--z-green)"><i class="bi bi-check-circle-fill"></i> {% t "Onaga Telegram orqali yuborildi" %}</div>
+  {% else %}<div class="small mt-2 text-muted"><i class="bi bi-info-circle"></i> {% t "Xabar logga yozildi" %} ({% t n.get_status_display %})</div>{% endif %}
+{% elif empty %}<div class="small mt-2 text-danger">{% t "Matn bo'sh" %}</div>
+{% else %}<div class="small mt-2 text-danger"><i class="bi bi-exclamation-triangle"></i> {% t "Matnda onani xavotirga soladigan so'zlar bor — tahrirlang" %}: <b>{{ flags|join:", " }}</b></div>{% endif %}

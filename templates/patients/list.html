@@ -1,0 +1,41 @@
+{% extends "base.html" %}{% load zones %}
+{% block title %}{% t "Homiladorlar" %}{% endblock %}
+{% block page_title %}{% t "Homiladorlar" %} <span class="text-muted fw-normal fs-6">· {{ total }}</span>{% endblock %}
+{% block content %}
+<form class="card mb-3" method="get"><div class="card-body py-3"><div class="row g-2 align-items-center">
+  <div class="col-md-4"><div class="input-group"><span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
+    <input name="q" value="{{ request.GET.q }}" class="form-control" placeholder="{% t "Familiya, ism yoki telefon" %}"></div></div>
+  <div class="col-6 col-md-2"><select name="color" class="form-select" onchange="this.form.submit()">
+    <option value="">{% t "Barcha zonalar" %}</option>
+    <option value="red" {% if request.GET.color == 'red' %}selected{% endif %}>{% t "Qizil" %}</option>
+    <option value="yellow" {% if request.GET.color == 'yellow' %}selected{% endif %}>{% t "Sariq" %}</option>
+    <option value="green" {% if request.GET.color == 'green' %}selected{% endif %}>{% t "Yashil" %}</option></select></div>
+  <div class="col-6 col-md-2"><select name="status" class="form-select" onchange="this.form.submit()">
+    <option value="pregnant">{% t "Homilador" %}</option>
+    <option value="delivered" {% if request.GET.status == 'delivered' %}selected{% endif %}>{% t "Tug'gan" %}</option>
+    <option value="all" {% if request.GET.status == 'all' %}selected{% endif %}>{% t "Hammasi" %}</option></select></div>
+  <div class="col-6 col-md-2"><div class="form-check"><input class="form-check-input" type="checkbox" name="missed" value="1" id="missed" {% if request.GET.missed %}checked{% endif %} onchange="this.form.submit()"><label class="form-check-label" for="missed">{% t "Ko'rikka kelmagan" %}</label></div></div>
+  <div class="col-6 col-md-2 d-flex gap-2">{% if request.GET.mavze %}<input type="hidden" name="mavze" value="{{ request.GET.mavze }}">{% endif %}
+    <button class="btn btn-light flex-fill"><i class="bi bi-funnel"></i> {% t "Filtr" %}</button>
+    {% if can_add_patient %}<a href="{% url 'patient_create' %}" class="btn btn-primary" title="{% t "Ro'yxatga olish" %}"><i class="bi bi-plus-lg"></i></a>{% endif %}</div>
+</div></div></form>
+<div class="card"><div class="table-responsive">
+<table class="table table-hover">
+  <thead><tr><th>{% t "Zona" %}</th><th>{% t "F.I.Sh." %}</th><th>{% t "Yosh" %}</th><th>{% t "Hafta" %}</th><th class="d-none d-md-table-cell">{% t "Hudud" %}</th><th>{% t "Keyingi ko'rik" %}</th><th class="d-none d-lg-table-cell">{% t "Sabab" %}</th></tr></thead>
+  <tbody>
+  {% for p in page %}
+  <tr data-href="{% url 'patient_detail' p.id %}" class="row-link">
+    <td>{% zone p.current_color True %}</td>
+    <td><a href="{% url 'patient_detail' p.id %}" class="fw-medium text-nowrap">{{ p.short_name }}</a><div class="small text-muted">{{ p.phone }}</div></td>
+    <td>{{ p.age }}</td>
+    <td>{% if p.status == 'pregnant' %}{{ p.gestational_weeks }}{% else %}<span class="chip">{% t "Tug'gan" %}</span>{% endif %}</td>
+    <td class="small d-none d-md-table-cell">{{ p.mavze.name }} · {{ p.mavze.clinic.name }}{% if not is_clinic %}<div class="text-muted">{{ p.mavze.clinic.district.name }}</div>{% endif %}</td>
+    <td class="small text-nowrap {% if p.missed_visit %}fw-semibold" style="color:var(--z-red){% endif %}">{{ p.next_visit_date|date:"d.m.Y"|default:"—" }}{% if p.missed_visit %} <i class="bi bi-exclamation-circle"></i>{% endif %}</td>
+    <td class="small d-none d-lg-table-cell text-truncate" style="max-width:280px">{{ p.color_reasons|first|default:""|tl:lang }}</td>
+  </tr>
+  {% empty %}<tr><td colspan="7" class="empty"><i class="bi bi-search"></i>{% t "Topilmadi" %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div></div>
+{% include "_pager.html" %}
+{% endblock %}

@@ -1,0 +1,9 @@
+{% load zones %}
+{% if error %}<div class="text-muted small">{% t "Maydonlarni tekshiring" %}</div>{% else %}
+<div class="d-flex align-items-center gap-2 mb-2">{% zone color %}
+  {% if old != color %}<small class="text-muted">{% t "hozirgi" %}: {% t old|zone_label %} → <b>{% t color|zone_label %}</b></small>{% endif %}</div>
+{% if reasons %}<ul class="small mb-0 ps-3">{% for r in reasons %}<li>{{ r|tl:lang }}</li>{% endfor %}</ul>
+{% else %}<div class="small text-muted">{% t "Xavf belgisi aniqlanmadi" %}</div>{% endif %}
+{% if color == 'red' %}<div class="small mt-2 p-2 rounded zone-red"><i class="bi bi-send-exclamation"></i> {% t "Tasdiqlansa OvaBMU ga avtomatik signal ketadi" %}</div>
+{% elif color == 'yellow' and old == 'green' %}<div class="small mt-2 p-2 rounded zone-yellow"><i class="bi bi-send"></i> {% t "Tasdiqlansa tuman shifokoriga signal ketadi" %}</div>{% endif %}
+{% endif %}

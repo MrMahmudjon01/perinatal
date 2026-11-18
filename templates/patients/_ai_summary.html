@@ -1,0 +1,46 @@
+<div id="ai-sum">
+  {% if ai.table %}
+  <div class="small-label mt-2"><i class="bi bi-clipboard2-data"></i> {% t "Oxirgi ko'rik: me'yor bilan solishtirish" %}</div>
+  <div class="table-responsive"><table class="table table-sm small mb-2 align-middle">
+    <thead><tr><th>{% t "Ko'rsatkich" %}</th><th class="text-end">{% t "Qiymat" %}</th><th>{% t "Me'yor" %}</th><th>{% t "Min – max (kuzatuv)" %}</th><th>{% t "Holat" %}</th></tr></thead><tbody>
+    {% for r in ai.table %}<tr class="{% if r.level == 2 %}zrow zrow-red{% elif r.level == 1 %}zrow zrow-yellow{% endif %}">
+      <td>{% t r.label %}</td><td class="text-end fw-semibold text-nowrap">{{ r.value }} <span class="text-muted fw-normal">{{ r.unit }}</span></td>
+      <td class="text-nowrap">{{ r.norm }}</td>
+      <td class="text-nowrap text-muted">{% if r.range and r.range.n > 1 %}{{ r.range.min }} – {{ r.range.max }}{% else %}—{% endif %}</td>
+      <td>{% if r.level == 0 %}<span style="color:var(--z-green)"><i class="bi bi-check-circle"></i> {{ r.note }}</span>{% else %}<span style="color:{% if r.level == 2 %}var(--z-red){% else %}var(--z-yellow){% endif %}"><i class="bi bi-{% if r.status == 'low' %}arrow-down{% else %}arrow-up{% endif %}-circle-fill"></i> {{ r.note }}</span>{% endif %}</td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% endif %}
+{% if ai.engine == 'voicelab-llm' %}
+  {% if ai.summary %}<div class="fw-medium mb-2">{{ ai.summary }}</div>{% endif %}
+  {% if ai.trends %}<div class="small-label mt-2"><i class="bi bi-graph-up"></i> {% t "Dinamika" %}</div>
+    <ul class="small mb-2 ps-3">{% for x in ai.trends %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
+  {% if ai.attention %}<div class="small-label" style="color:var(--z-red)"><i class="bi bi-exclamation-triangle"></i> {% t "E'tibor bering" %}</div>
+    <ul class="small mb-2 ps-3">{% for x in ai.attention %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
+  {% if ai.next_steps %}<div class="small-label" style="color:var(--z-green)"><i class="bi bi-check2-square"></i> {% t "Keyingi qadamlar" %}</div>
+    <ul class="small mb-2 ps-3">{% for x in ai.next_steps %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
+  {% if ai.facts %}<details class="small text-muted"><summary>{% t "Tizim hisoblagan faktlar" %} ({{ ai.facts|length }})</summary>
+    <ul class="ps-3 mb-0 mt-1">{% for x in ai.facts %}<li>{{ x }}</li>{% endfor %}</ul></details>{% endif %}
+{% else %}
+  {% if ai.error %}<div class="small text-danger mb-2"><i class="bi bi-wifi-off"></i> {% t "AI xizmati javob bermadi — faqat tizim faktlari ko'rsatildi" %}</div>{% endif %}
+  {% if ai.facts %}<ul class="small mb-2 ps-3">{% for x in ai.facts %}<li>{{ x }}</li>{% endfor %}</ul>
+  {% else %}<div class="small text-muted">{% t "Tahlil uchun yetarli ko'rik yo'q" %}</div>{% endif %}
+{% endif %}
+  {% if ai.patient_message and can_send %}
+  <div class="mt-3 p-2 rounded" style="background:var(--bg)">
+    <div class="small-label"><i class="bi bi-telegram" style="color:var(--primary)"></i> {% t "Onaga yuboriladigan xabar (xotirjam, zona va tashxissiz)" %}</div>
+    <form hx-post="{% url 'ai_summary_send' p.id %}" hx-target="#ai-send-res" hx-swap="innerHTML">
+      <textarea name="text" class="form-control form-control-sm" rows="14">{{ ai.patient_message }}</textarea>
+      {% if ai.patient_flags %}<div class="small text-danger mt-1">{% t "Matnda onani xavotirga soladigan so'zlar bor — tahrirlang" %}: <b>{{ ai.patient_flags|join:", " }}</b></div>{% endif %}
+      <div class="d-flex align-items-center gap-2 mt-2">
+        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-send"></i> {% t "Tekshirdim — onaga yuborish" %}</button>
+        <span class="small text-muted">{% if p.telegram_chat_id %}<i class="bi bi-telegram"></i> {% t "bot ulangan" %}{% else %}{% t "bot ulanmagan — xabar logga yoziladi" %}{% endif %}</span>
+      </div>
+      <div id="ai-send-res"></div>
+    </form>
+  </div>
+  {% endif %}
+  <div class="d-flex justify-content-between align-items-center mt-2 small text-muted">
+    <span><i class="bi bi-cpu"></i> {% if ai.engine == 'voicelab-llm' %}VoiceLab AI (aisha-orbit){% else %}{% t "Tizim faktlari" %}{% endif %} · {% t "Yakuniy qaror shifokorda" %}</span>
+    <button class="btn btn-sm btn-link p-0" hx-post="{% url 'ai_summary' p.id %}" hx-vals='{"force": "1"}' hx-target="#ai-sum" hx-swap="outerHTML" hx-indicator="#ai-spin"><i class="bi bi-arrow-repeat"></i> {% t "Yangilash" %}</button>
+  </div>
+</div>

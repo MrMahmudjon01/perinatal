@@ -1,0 +1,37 @@
+{% load zones humanize %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-xl-3"><div class="card kpi">
+    <div class="ic {{ kpi.region_color }}"><i class="bi {{ kpi.region_color|zone_icon }}"></i></div>
+    <div><div class="l">{% t "Hudud zonasi" %}</div><div class="mt-1">{% zone kpi.region_color %}</div>
+      <div class="s mt-1">{{ kpi.red_pct }}% — {% t "qizil zonadagi homiladorlar" %}</div></div></div></div>
+  <div class="col-6 col-xl-3"><a class="kpi-link" href="{% url 'patient_list' %}"><div class="card kpi">
+    <div class="ic"><i class="bi bi-person-hearts"></i></div>
+    <div class="flex-fill"><div class="l">{% t "Homiladorlar" %}</div><div class="v">{{ kpi.p.total|intcomma }}</div>
+      <div class="bar3 mt-1"><span class="g" style="flex:{{ kpi.p.green }}"></span><span class="y" style="flex:{{ kpi.p.yellow }}"></span><span class="r" style="flex:{{ kpi.p.red }}"></span></div>
+      <div class="s mt-1"><span style="color:var(--z-red)">● {{ kpi.p.red }}</span> · <span style="color:var(--z-yellow)">● {{ kpi.p.yellow }}</span> · <span style="color:var(--z-green)">● {{ kpi.p.green }}</span></div></div></div></a></div>
+  <div class="col-6 col-xl-3"><a class="kpi-link" href="{% url 'child_list' %}"><div class="card kpi">
+    <div class="ic"><i class="bi bi-balloon-heart"></i></div>
+    <div class="flex-fill"><div class="l">{% t "Bolalar (0–2 yosh)" %}</div><div class="v">{{ kpi.c.total|intcomma }}</div>
+      <div class="bar3 mt-1"><span class="g" style="flex:{{ kpi.c.green }}"></span><span class="y" style="flex:{{ kpi.c.yellow }}"></span><span class="r" style="flex:{{ kpi.c.red }}"></span></div>
+      <div class="s mt-1"><span style="color:var(--z-red)">● {{ kpi.c.red }}</span> · <span style="color:var(--z-yellow)">● {{ kpi.c.yellow }}</span> · <span style="color:var(--z-green)">● {{ kpi.c.green }}</span></div></div></div></a></div>
+  <div class="col-6 col-xl-3"><a class="kpi-link" href="{% url 'alert_list' %}"><div class="card kpi">
+    <div class="ic {% if kpi.alerts_new %}red{% endif %}"><i class="bi bi-bell"></i></div>
+    <div><div class="l">{% t "Faol signallar" %}</div><div class="v">{{ kpi.alerts_open }}</div>
+      <div class="s">{{ kpi.alerts_new }} {% t "yangi" %} · {{ kpi.referrals_open }} {% t "ochiq yo'llanma" %}</div></div></div></a></div>
+</div>
+{% if not compact %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-sm-4"><a class="kpi-link" href="{% url 'patronage_page' %}"><div class="card kpi">
+    <div class="ic green"><i class="bi bi-calendar2-check"></i></div>
+    <div><div class="l">{% t "Ko'rikka kelish" %}</div><div class="v">{{ kpi.attendance_pct }}%</div>
+      <div class="s">{{ kpi.p.missed }} {% t "nafar kelmagan" %}</div></div></div></a></div>
+  <div class="col-6 col-sm-4"><div class="card kpi">
+    <div class="ic"><i class="bi bi-clipboard2-pulse"></i></div>
+    <div><div class="l">{% t "Erta ro'yxatga olish (12 haftagacha)" %}</div><div class="v">{{ kpi.early_reg_pct }}%</div>
+      <div class="s">SSV: ≤12</div></div></div></div>
+  <div class="col-6 col-sm-4"><a class="kpi-link" href="{% url 'vaccination_page' %}"><div class="card kpi">
+    <div class="ic"><i class="bi bi-shield-plus"></i></div>
+    <div><div class="l">{% t "Emlash bajarilishi" %}</div><div class="v">{{ kpi.vacc_pct }}%</div>
+      <div class="s">{{ kpi.vacc_overdue }} {% t "ta kechikkan" %}</div></div></div></a></div>
+</div>
+{% endif %}

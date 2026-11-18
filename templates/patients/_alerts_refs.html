@@ -1,0 +1,15 @@
+{% load zones %}
+<div class="col-lg-6"><div class="card h-100"><div class="card-header">{% t "Signallar" %}</div>
+  <ul class="list-group list-group-flush">{% for a in alerts %}
+    <li class="list-group-item small" style="background:transparent;color:var(--ink)">
+      <div class="d-flex justify-content-between">{% zone a.to_color True %}<span class="text-muted">{{ a.created_at|date:"d.m H:i" }}</span></div>
+      <div class="mt-1">{{ a.get_level_display }} · <b>{{ a.get_status_display }}</b>{% if a.escalated %} · ⏫{% endif %}</div>
+      {% if a.status == 'resolved' %}<div class="text-muted">{% t a.get_action_type_display %}{% if a.action_note %} — {{ a.action_note }}{% endif %}</div><div class="mt-1">{% include "alerts/_mc.html" with o=a %}</div>{% endif %}
+    </li>{% empty %}<li class="list-group-item empty" style="background:transparent">—</li>{% endfor %}</ul></div></div>
+<div class="col-lg-6"><div class="card h-100"><div class="card-header">{% t "Yo'llanmalar" %}</div>
+  <ul class="list-group list-group-flush">{% for r in referrals %}
+    <li class="list-group-item small" style="background:transparent;color:var(--ink)">
+      <div class="d-flex justify-content-between"><b>{{ r.get_to_level_display }}</b><span class="text-muted">{{ r.created_at|date:"d.m H:i" }}</span></div>
+      <div>{{ r.reason|truncatechars:90 }}</div>
+      <span class="badge {% if r.status == 'acted' %}text-bg-success{% elif r.status == 'accepted' %}text-bg-primary{% else %}text-bg-warning{% endif %}">{{ r.get_status_display }}</span>
+    </li>{% empty %}<li class="list-group-item empty" style="background:transparent">—</li>{% endfor %}</ul></div></div>

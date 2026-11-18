@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{% t "Yangi emlash e'loni" %}{% endblock %}
+{% block crumbs %}<a href="{% url 'session_list' %}">{% t "Emlash e'lonlari" %}</a>{% endblock %}
+{% block page_title %}{% t "Yangi emlash e'loni" %}{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-6"><form method="post" class="card"><div class="card-body">{% csrf_token %}
+    <div class="row g-3">
+      {% for f in form %}<div class="{% if f.name == 'vaccine' or f.name == 'note' %}col-12{% else %}col-md-4{% endif %}">
+        <label class="form-label small" for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}
+        {% for e in f.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>{% endfor %}
+    </div>
+    <div class="small text-muted mt-3"><i class="bi bi-info-circle"></i> {% t "Vaksina milliy kalendardan tanlanadi. Shu vaksina yoshiga yetgan va hali olmagan bolalar avtomatik taklif qilinadi." %}</div>
+    <div class="d-flex gap-2 mt-3">
+      <button name="preview" value="1" class="btn btn-light"><i class="bi bi-people"></i> {% t "Kimlar mos keladi?" %}</button>
+      <button class="btn btn-primary"><i class="bi bi-megaphone"></i> {% t "E'lon qilish" %}</button>
+    </div>
+  </div></form></div>
+  <div class="col-lg-6">{% if preview is not None %}
+    <div class="card"><div class="card-header">{% t "Mos keladigan bolalar" %}<span class="sub">{{ preview|length }}</span></div>
+      <div class="table-responsive" style="max-height:60vh"><table class="table table-sm"><tbody>
+        {% for v in preview %}<tr><td>{{ v.child.full_name }}</td><td class="small text-muted">{{ v.child.age_label }}</td>
+          <td>{% if v.status == 'overdue' %}<span class="zone zone-red zone-sm">{% t "Kechikdi" %}</span>{% else %}<span class="chip">{{ v.due_date|date:"d.m.Y" }}</span>{% endif %}</td>
+          <td class="small">{% if v.child.mother.telegram_chat_id %}<i class="bi bi-telegram" style="color:var(--primary)"></i>{% else %}<span class="text-muted">{% t "bot yo'q" %}</span>{% endif %}</td></tr>
+        {% empty %}<tr><td class="empty">—</td></tr>{% endfor %}
+      </tbody></table></div></div>
+  {% else %}
+    <div class="card"><div class="card-body small">
+      <div class="fw-semibold mb-2"><i class="bi bi-telegram" style="color:var(--primary)"></i> {% t "Onalarga boradigan eslatmalar" %}</div>
+      <div class="p-2 rounded mb-2" style="background:var(--bg)"><b>3 {% t "kun qolganda" %}:</b> «💉 23.11.2026 (dushanba) soat 09:00 da farzandingiz uchun … emlashi bor. Esdan chiqarmang!»</div>
+      <div class="p-2 rounded" style="background:var(--bg)"><b>1 {% t "kun qolganda" %}:</b> «⏰ Ertaga soat 09:00 da poliklinikaga keling…»</div>
+    </div></div>
+  {% endif %}</div>
+</div>
+{% endblock %}

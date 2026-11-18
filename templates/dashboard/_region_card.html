@@ -1,0 +1,14 @@
+{% load zones %}
+<a href="{{ r.href }}" class="card region-card c-{{ r.color }} p-3 h-100">
+  <div class="d-flex justify-content-between align-items-start">
+    <div><div class="fw-semibold">{{ title }}</div><div class="small text-muted">{{ subtitle }}</div></div>
+    {% zone r.color True %}
+  </div>
+  <div class="d-flex align-items-end justify-content-between mt-2">
+    <div><span class="pct">{{ r.red_pct }}%</span> <span class="small text-muted">qizil</span></div>
+    <div class="small text-muted text-end">{{ r.p_red }} / {{ r.p_total }} homilador<br>bolalar: {{ r.c_total }}{% if r.c_red %} · <span style="color:var(--z-red)">{{ r.c_red }} qizil</span>{% endif %}</div>
+  </div>
+  <div class="bar3 mt-2" title="Homiladorlar — yashil {{ r.p_green }} · sariq {{ r.p_yellow }} · qizil {{ r.p_red }}">
+    <span class="g" style="flex:{{ r.p_green }}"></span><span class="y" style="flex:{{ r.p_yellow }}"></span><span class="r" style="flex:{{ r.p_red }}"></span>
+  </div>
+</a>

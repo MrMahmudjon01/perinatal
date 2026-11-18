@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}{{ district.name }}{% endblock %}
+{% block crumbs %}{% if is_ovabmu %}<a href="{% url 'regions' %}">{% t "Toshkent shahri" %}</a> / {% endif %}{{ district.name }}{% endblock %}
+{% block page_title %}{{ district.name }} {% t "tumani" %}{% endblock %}
+{% block content %}
+{% include "dashboard/_kpis.html" with compact=True %}
+{% include "dashboard/_region_table.html" with level="clinic" %}
+{% endblock %}

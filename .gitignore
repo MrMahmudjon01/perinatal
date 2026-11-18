@@ -1,0 +1,20 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Maxfiy sozlamalar va loginlar
+.env
+LOGINLAR.txt
+
+# Django
+staticfiles/
+media/
+*.log
+
+# IDE
+.idea/
+.vscode/
+
+# Ichki hujjatlar (checkpoint materiallari)
+docs/

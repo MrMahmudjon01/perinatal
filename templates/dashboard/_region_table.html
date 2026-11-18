@@ -1,0 +1,16 @@
+{% load zones humanize %}
+<div class="card"><div class="table-responsive"><table class="table table-hover">
+  <thead><tr><th>{% if level == 'district' %}{% t "Tuman" %}{% elif level == 'clinic' %}{% t "Poliklinika" %}{% else %}{% t "Mavze" %}{% endif %}</th>
+    <th>{% t "Zona" %}</th><th class="text-end">{% t "Qizil %" %}</th><th class="text-end">{% t "Homiladorlar" %}</th>
+    <th style="min-width:150px">{% t "Zona taqsimoti" %}</th><th class="text-end">{% t "Bolalar" %}</th>{% if level == 'district' %}<th class="text-end">{% t "Aholi" %}</th>{% endif %}</tr></thead>
+  <tbody>
+  {% for r in rows %}<tr data-href="{{ r.href }}" class="row-link zrow zrow-{{ r.color }}">
+    <td><a href="{{ r.href }}" class="fw-medium">{{ r.obj.name }}</a>{% if level == 'clinic' and r.obj.source == 'synthetic' %} <span class="chip" title="{% t "joylashuvi taxminiy" %}">~</span>{% endif %}</td>
+    <td>{% zone r.color True %}</td>
+    <td class="text-end fw-semibold">{{ r.red_pct }}%</td>
+    <td class="text-end">{{ r.p_total }} <span class="small" style="color:var(--z-red)">({{ r.p_red }})</span></td>
+    <td><div class="bar3" title="{{ r.p_green }} / {{ r.p_yellow }} / {{ r.p_red }}"><span class="g" style="flex:{{ r.p_green }}"></span><span class="y" style="flex:{{ r.p_yellow }}"></span><span class="r" style="flex:{{ r.p_red }}"></span></div></td>
+    <td class="text-end">{{ r.c_total }}{% if r.c_red %} <span class="small" style="color:var(--z-red)">({{ r.c_red }})</span>{% endif %}</td>
+    {% if level == 'district' %}<td class="text-end text-muted">{{ r.obj.population|intcomma }}</td>{% endif %}
+  </tr>{% empty %}<tr><td colspan="7" class="empty">—</td></tr>{% endfor %}
+  </tbody></table></div></div>

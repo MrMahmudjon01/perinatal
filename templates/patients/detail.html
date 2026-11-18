@@ -1,0 +1,165 @@
+{% extends "base.html" %}{% load zones %}
+{% block title %}{{ p.short_name }}{% endblock %}
+{% block crumbs %}<a href="{% url 'patient_list' %}">{% t "Homiladorlar" %}</a> / {{ p.mavze.clinic.name }} · {{ p.mavze.name }}{% endblock %}
+{% block page_title %}{{ p.full_name }}{% endblock %}
+{% block content %}
+{% with last=visits|first %}
+<div class="card mb-3"><div class="card-body d-flex flex-wrap gap-3 align-items-center justify-content-between">
+  <div class="profile-head">
+    <div class="av">{{ p.first_name|first }}{{ p.last_name|first }}</div>
+    <div><div class="d-flex flex-wrap gap-2 align-items-center"><span class="fw-semibold fs-5">{{ p.short_name }}</span>{% zone p.current_color %}</div>
+      <div class="text-muted small">{{ p.age }} {% t "yosh" %} · {% if p.status == 'pregnant' %}{{ p.gestational_weeks }} {% t "hafta" %} · {% t "Kutilayotgan tug'ruq" %} {{ p.edd|date:"d.m.Y" }}{% else %}{% t "Tug'gan" %} {{ p.delivered_at|date:"d.m.Y" }}{% endif %}</div>
+      {% if p.color_reasons %}<div class="small mt-1">{% for r in p.color_reasons|slice:":3" %}<span class="chip me-1 mb-1">{{ r|tl:lang }}</span>{% endfor %}</div>{% endif %}</div>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    {% if can_edit and p.status == 'pregnant' %}<a href="{% url 'visit_create' p.id %}" class="btn btn-primary"><i class="bi bi-mic-fill"></i> {% t "Yangi ko'rik (ovoz / qo'lda)" %}</a>{% endif %}
+    {% if can_refer %}<button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#refModal"><i class="bi bi-send"></i> {% t "Yo'llanma / order berish" %}</button>{% endif %}
+    <div class="dropdown"><button class="btn btn-light" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#msgModal"><i class="bi bi-telegram"></i> {% t "Onaga xabar yuborish" %}</button></li>
+        {% if can_child %}<li><a class="dropdown-item" href="{% url 'child_create' p.id %}"><i class="bi bi-balloon-heart"></i> {% t "Tug'ruqni / chaqaloqni qayd etish" %}</a></li>
+        <li><a class="dropdown-item" href="{% url 'patient_edit' p.id %}"><i class="bi bi-pencil"></i> {% t "Ma'lumotlarni tahrirlash" %}</a></li>{% endif %}
+      </ul></div>
+  </div>
+</div></div>
+
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#t-sum">{% t "Umumiy" %}</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-vis">{% t "Ko'riklar" %} <span class="badge text-bg-light border">{{ visits|length }}</span></button></li>
+  {% if anc %}<li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-anc">{% t "Antenatal reja" %}</button></li>{% endif %}
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-kids">{% t "Farzandlari" %} <span class="badge text-bg-light border">{{ children|length }}</span></button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-al">{% t "Signal va yo'llanmalar" %}{% if alerts or referrals %} <span class="badge text-bg-danger">{{ alerts|length|add:referrals|length }}</span>{% endif %}</button></li>
+  {% if audit is not None %}<li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-audit"><i class="bi bi-shield-lock"></i> {% t "Kirishlar jurnali" %}</button></li>{% endif %}
+</ul>
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="t-sum"><div class="row g-3">
+    <div class="col-lg-5"><div class="card h-100"><div class="card-body"><dl class="kv">
+      {% if p.status == 'pregnant' %}<dt>{% t "Homiladorlik muddati" %}</dt><dd>{{ p.gestational_weeks }} {% t "hafta" %}</dd>
+      <dt>{% t "Kutilayotgan tug'ruq" %}</dt><dd>{{ p.edd|date:"d.m.Y" }}</dd>{% endif %}
+      <dt>{% t "Homiladorlik / tug'ruq" %}</dt><dd>{{ p.gravidity }} / {{ p.parity }}</dd>
+      <dt>{% t "Qon guruhi" %}</dt><dd>{{ p.blood_group|default:"—" }}</dd>
+      <dt>{% t "Keyingi ko'rik" %}</dt><dd {% if p.missed_visit %}style="color:var(--z-red)"{% endif %}>{{ p.next_visit_date|date:"d.m.Y"|default:"—" }}{% if p.missed_visit %} · {% t "kechikdi" %}{% endif %}</dd>
+      <dt>{% t "Bot uchun raqam" %}</dt><dd>{{ p.phone }} {% if p.telegram_chat_id %}<span class="zone zone-green zone-sm"><i class="bi bi-telegram"></i> {% t "ulangan" %}</span>{% else %}<span class="chip">{% t "ulanmagan" %}</span>{% endif %}</dd>
+      <dt>{% t "Ma'lumotga rozilik" %}</dt><dd>{% if p.consent %}<span class="zone zone-green zone-sm"><i class="bi bi-check2"></i> {% t "olingan" %}{% if p.consent_at %} · {{ p.consent_at|date:"d.m.Y" }}{% endif %}</span>{% else %}<span class="zone zone-yellow zone-sm">{% t "olinmagan" %}</span>{% endif %}</dd>
+      <dt>{% t "Manzil" %}</dt><dd>{{ p.address|default:"—" }}</dd>
+      <dt>{% t "Surunkali kasalliklar" %}</dt><dd>{{ p.chronic_conditions|default:"—" }}</dd>
+      <dt>{% t "Oldingi asoratlar" %}</dt><dd>{{ p.previous_complications|default:"—" }}</dd>
+    </dl></div></div></div>
+    <div class="col-lg-7"><div class="row g-3">
+      {% if visits %}
+      <div class="col-12"><div class="card ai-card"><div class="card-header"><span><i class="bi bi-stars" style="color:var(--primary)"></i> {% t "AI xulosa" %}</span>
+        <span id="ai-spin" class="htmx-indicator spinner-border spinner-border-sm text-primary"></span></div>
+        <div class="card-body">
+          <div id="ai-sum"><div class="small text-muted mb-2">{% t "AI barcha ko'riklar dinamikasini tahlil qilib, nimaga e'tibor berish kerakligini qisqa yozadi." %}</div>
+            <button class="btn btn-sm btn-primary" hx-post="{% url 'ai_summary' p.id %}" hx-target="#ai-sum" hx-swap="outerHTML" hx-indicator="#ai-spin"><i class="bi bi-stars"></i> {% t "Tahlil qilish" %}</button></div>
+        </div></div></div>
+      {% endif %}
+      {% if last %}
+      <div class="col-12"><div class="card"><div class="card-header">{{ last.visit_date|date:"d.m.Y" }}{% if last.gestational_week %} · {{ last.gestational_week }} {% t "hafta" %}{% endif %}{% zone last.final_color True %}</div>
+        <div class="card-body"><div class="row g-2 text-center">
+          <div class="col-4 col-md-2"><div class="small-label">QB</div><div class="fw-semibold">{{ last.bp|default:"—" }}</div></div>
+          <div class="col-4 col-md-2"><div class="small-label">Hb</div><div class="fw-semibold">{{ last.hb|default:"—" }}</div></div>
+          <div class="col-4 col-md-2"><div class="small-label">Oqsil</div><div class="fw-semibold">{{ last.get_urine_protein_display|default:"—" }}</div></div>
+          <div class="col-4 col-md-2"><div class="small-label">YUU</div><div class="fw-semibold">{{ last.fetal_heart_rate|default:"—" }}</div></div>
+          <div class="col-4 col-md-2"><div class="small-label">kg</div><div class="fw-semibold">{{ last.weight|default:"—" }}</div></div>
+          <div class="col-4 col-md-2"><div class="small-label">t°</div><div class="fw-semibold">{{ last.temperature|default:"—" }}</div></div>
+        </div>
+        {% if last.diagnosis %}<div class="small mt-3"><span class="text-muted">{% t "Xulosa" %}:</span> {{ last.diagnosis }}</div>{% endif %}
+        {% if last.recommendation %}<div class="small"><span class="text-muted">{% t "Tavsiya" %}:</span> {{ last.recommendation }}</div>{% endif %}</div></div></div>
+      {% endif %}
+      {% if visits|length > 1 %}
+      <div class="col-md-6"><div class="card"><div class="card-body"><div class="small-label">{% t "Gemoglobin, g/l" %}</div><div style="height:150px"><canvas id="hbChart"></canvas></div></div></div></div>
+      <div class="col-md-6"><div class="card"><div class="card-body"><div class="small-label">{% t "Qon bosimi, mm sim. ust." %}</div><div style="height:150px"><canvas id="bpChart"></canvas></div></div></div></div>
+      {% endif %}
+    </div></div>
+  </div></div>
+
+  <div class="tab-pane fade" id="t-vis"><div class="card"><div class="card-body"><div class="timeline">
+    {% for v in visits %}
+    <div class="t-item c-{{ v.final_color }}">
+      <div class="d-flex flex-wrap justify-content-between gap-2">
+        <div><b>{{ v.visit_date|date:"d.m.Y" }}</b>{% if v.gestational_week %} · {{ v.gestational_week }} {% t "hafta" %}{% endif %}
+          <span class="small text-muted">· {{ v.doctor|default:"" }}</span>{% if v.source != 'manual' %} <span class="chip"><i class="bi bi-mic"></i> AI</span>{% endif %} {% include "alerts/_mc.html" with o=v %}</div>
+        {% zone v.final_color True %}</div>
+      <div class="small mt-1 d-flex flex-wrap gap-3">
+        {% if v.bp %}<span><span class="text-muted">QB</span> <b>{{ v.bp }}</b></span>{% endif %}
+        {% if v.hb %}<span><span class="text-muted">Hb</span> <b>{{ v.hb }}</b></span>{% endif %}
+        {% if v.urine_protein %}<span><span class="text-muted">Oqsil</span> <b>{{ v.get_urine_protein_display }}</b></span>{% endif %}
+        {% if v.fetal_heart_rate %}<span><span class="text-muted">YUU</span> <b>{{ v.fetal_heart_rate }}</b></span>{% endif %}
+        {% if v.weight %}<span><span class="text-muted">kg</span> <b>{{ v.weight }}</b></span>{% endif %}
+        {% if v.edema %}<span class="zone zone-yellow zone-sm">shish</span>{% endif %}{% if v.bleeding %}<span class="zone zone-red zone-sm">qon ketish</span>{% endif %}
+      </div>
+      {% if v.complaints %}<div class="small"><span class="text-muted">{% t "Shikoyat" %}:</span> {{ v.complaints }}</div>{% endif %}
+      {% if v.diagnosis %}<div class="small"><span class="text-muted">{% t "Xulosa" %}:</span> {{ v.diagnosis }}</div>{% endif %}
+      {% if v.recommendation %}<div class="small"><span class="text-muted">{% t "Tavsiya" %}:</span> {{ v.recommendation }}</div>{% endif %}
+      {% if v.color_override_note %}<div class="small fst-italic">⚑ {{ v.color_override_note }}</div>{% endif %}
+      {% if v.transcript %}<details class="small"><summary class="text-muted">AI</summary>{{ v.transcript }}</details>{% endif %}
+    </div>
+    {% empty %}<div class="empty">—</div>{% endfor %}
+  </div></div></div></div>
+
+  {% if anc %}
+  <div class="tab-pane fade" id="t-anc"><div class="card"><div class="card-header"><span>{% t "Antenatal reja" %} — SSV (8)</span>
+    {% if reg_week %}<span class="small fw-normal">{% t "Ro'yxatga olingan" %}: <b>{{ reg_week }} {% t "hafta" %}</b>
+      {% if reg_week <= 12 %}<span class="zone zone-green zone-sm">{% t "erta" %}</span>{% else %}<span class="zone zone-yellow zone-sm">{% t "kech (>12 hafta)" %}</span>{% endif %}</span>{% endif %}</div>
+    <div class="card-body"><div class="anc-steps">
+    {% for s in anc %}
+      <div class="anc-step s-{{ s.status }}" title="{{ s.label }}{% if s.screening %} · {{ s.screening }}{% endif %}">
+        <div class="dot">{% if s.status == 'done' %}<i class="bi bi-check-lg"></i>{% elif s.status == 'missed' %}<i class="bi bi-x-lg"></i>{% elif s.status == 'due' %}<i class="bi bi-clock"></i>{% else %}{{ forloop.counter }}{% endif %}</div>
+        <div class="fw-semibold small">{% if forloop.first %}≤{% endif %}{{ s.week }} {% t "hafta" %}</div>
+        <div class="small text-muted">{{ s.date|date:"d.m.Y" }}</div>
+        <div class="small">{% if s.status == 'done' %}{% t "o'tdi" %}{% elif s.status == 'missed' %}<b style="color:var(--z-red)">{% t "o'tkazib yuborildi" %}</b>{% elif s.status == 'due' %}<b>{% t "navbatda" %}</b>{% elif s.status == 'skipped' %}—{% else %}{% t "rejada" %}{% endif %}</div>
+        {% if s.screening %}<span class="badge text-bg-light border mt-1" title="{{ s.screening }}"><i class="bi bi-display"></i> {% t "skrining" %}</span>{% endif %}
+      </div>
+    {% endfor %}
+    </div></div></div></div>
+  {% endif %}
+
+  <div class="tab-pane fade" id="t-kids"><div class="card"><table class="table table-hover"><tbody>
+    {% for c in children %}<tr data-href="{% url 'child_detail' c.id %}" class="row-link"><td><a href="{% url 'child_detail' c.id %}" class="fw-medium">{{ c.full_name }}</a></td><td>{{ c.age_label }}</td><td class="text-end">{% zone c.current_color True %}</td></tr>
+    {% empty %}<tr><td class="empty">—</td></tr>{% endfor %}
+  </tbody></table></div></div>
+
+  <div class="tab-pane fade" id="t-al"><div class="row g-3">{% include "patients/_alerts_refs.html" %}</div></div>
+  {% if audit is not None %}
+  <div class="tab-pane fade" id="t-audit"><div class="card">
+    <div class="card-header">{% t "Kim va qachon kartani ochgan" %}<span class="sub">{% t "tibbiy sir · ZRU-547" %}</span></div>
+    <div class="table-responsive"><table class="table table-sm mb-0 align-middle"><thead><tr><th>{% t "Vaqt" %}</th><th>{% t "Xodim" %}</th><th>{% t "Rol" %}</th><th>{% t "Harakat" %}</th><th>IP</th></tr></thead><tbody>
+    {% for a in audit %}<tr><td class="small text-nowrap">{{ a.created_at|date:"d.m.Y H:i:s" }}</td><td class="small">{{ a.user.full_name|default:a.user.username|default:"—" }}</td>
+      <td class="small"><span class="chip">{% t a.user.get_role_display %}</span></td><td class="small">{% t a.get_action_display %}</td><td class="small text-muted">{{ a.ip|default:"" }}</td></tr>
+    {% empty %}<tr><td colspan="5" class="empty">—</td></tr>{% endfor %}</tbody></table></div></div></div>
+  {% endif %}
+</div>
+{% endwith %}
+
+<div class="modal fade" id="refModal"><div class="modal-dialog"><form class="modal-content" method="post" action="{% url 'referral_create' %}">{% csrf_token %}
+  <input type="hidden" name="patient" value="{{ p.id }}">
+  <div class="modal-header"><h5 class="modal-title">{% t "Yo'llanma / order berish" %}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <label class="form-label">{% t "Kimga" %}</label>
+    <select name="to_level" class="form-select mb-3">{% for v, l in referral_levels %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select>
+    <label class="form-label">{% t "Sabab" %}</label><textarea name="reason" class="form-control" rows="3" required>{{ p.color_reasons|join:"; " }}</textarea>
+  </div>
+  <div class="modal-footer"><button class="btn btn-primary">{% t "Yuborish" %}</button></div></form></div></div>
+<div class="modal fade" id="msgModal"><div class="modal-dialog"><form class="modal-content" method="post" action="{% url 'message_mother' p.id %}">{% csrf_token %}
+  <div class="modal-header"><h5 class="modal-title">{% t "Onaga xabar yuborish" %}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body"><div class="small text-muted mb-2">Telegram · {{ p.phone }}</div>
+    <textarea name="text" class="form-control" rows="3" required>Hurmatli {{ p.first_name }}, iltimos ertaga soat 10:00 da qo'shimcha ko'rik uchun poliklinikaga keling.</textarea></div>
+  <div class="modal-footer"><button class="btn btn-primary"><i class="bi bi-send"></i> {% t "Yuborish" %}</button></div></form></div></div>
+{{ chart|json_script:"chart-data" }}
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const el = document.getElementById("hbChart"); if (!el) return;
+  const d = JSON.parse(document.getElementById("chart-data").textContent);
+  const css = getComputedStyle(document.documentElement), c = (n) => css.getPropertyValue(n).trim();
+  const base = { maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+    scales: { x: { ticks: { color: c("--muted") }, grid: { display: false } }, y: { ticks: { color: c("--muted") }, grid: { color: c("--line") } } } };
+  const line = (label, data, color, dash) => ({ label, data, borderColor: color, backgroundColor: color, borderWidth: 2, pointRadius: 3.5, borderDash: dash || [], spanGaps: true, tension: .25 });
+  new Chart(el, { type: "line", data: { labels: d.labels, datasets: [line("Hb", d.hb, c("--primary"))] }, options: { ...base, plugins: { legend: { display: false } } } });
+  new Chart(bpChart, { type: "line", data: { labels: d.labels, datasets: [line("SYS", d.sys, c("--primary")), line("DIA", d.dia, c("--ink-2"), [5, 4])] },
+    options: { ...base, plugins: { legend: { position: "top", labels: { color: c("--ink-2"), boxWidth: 16 } } } } });
+})();
+</script>
+{% endblock %}

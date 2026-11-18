@@ -1,0 +1,96 @@
+{% extends "base.html" %}{% load static zones %}
+{% block title %}{% t "Xarita" %}{% endblock %}
+{% block page_title %}{% t "Xarita" %}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'vendor/leaflet.css' %}">{% endblock %}
+{% block content %}
+<div class="map-wrap">
+  <div class="card p-2"><div id="map"></div></div>
+  <div class="card map-side">
+    <div class="card-header"><span>{% if level == 'district' %}{% t "Tumanlar" %}{% else %}{% t "Poliklinikalar" %}{% endif %}</span><span class="sub">{% t "Tuman tanlang" %}</span></div>
+    <div id="sel" class="card-body border-bottom d-none"></div>
+    <table class="table table-hover"><tbody>
+    {% for r in rows %}<tr class="district-row zrow zrow-{{ r.color }}" data-id="{{ r.obj.id }}">
+      <td class="fw-medium">{{ r.obj.name }}</td><td>{% zone r.color True %}</td><td class="text-end fw-semibold">{{ r.red_pct }}%</td></tr>{% endfor %}
+    </tbody></table>
+    <div class="card-body small text-muted pt-2">© Esri / OpenStreetMap · ○ {% t "joylashuvi taxminiy" %}</div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'vendor/leaflet.js' %}"></script>
+<script>
+(async () => {
+  const LEVEL = "{{ level }}";
+  const T = { green: "{% t "Yashil" %}", yellow: "{% t "Sariq" %}", red: "{% t "Qizil" %}", none: "—",
+              preg: "{% t "Homiladorlar" %}", kids: "{% t "Bolalar" %}", pop: "{% t "Aholi" %}", more: "{% t "Batafsil" %}",
+              approx: "{% t "joylashuvi taxminiy" %}", dist: "{% t "Tumanlar" %}", clin: "{% t "Poliklinikalar nuqtasi" %}" };
+  const css = getComputedStyle(document.documentElement), c = (n) => css.getPropertyValue(n).trim();
+  const Z = { green: c("--z-green"), yellow: c("--z-yellow"), red: c("--z-red"), none: c("--z-none") };
+  const map = L.map("map", { zoomSnap: 0.25 }).setView([41.30, 69.27], 11);   // view birinchi o'rnatiladi
+  // Fon: Esri World Street Map (kalitsiz). tile.openstreetmap.org tashqi saytlarga «Access blocked», CARTO — «API key required» qaytaradi
+  const dark = document.documentElement.getAttribute("data-bs-theme") === "dark";
+  const base = "World_Street_Map";
+  L.tileLayer(`https://server.arcgisonline.com/ArcGIS/rest/services/${base}/MapServer/tile/{z}/{y}/{x}`, {
+    maxZoom: 19, opacity: 1, className: dark ? "tiles-dark" : "",
+    attribution: 'Tiles © Esri — Esri, HERE, Garmin, © OpenStreetMap contributors',
+  }).addTo(map);
+  const data = await (await fetch("{% url 'map_data' %}")).json();
+  const byId = {}, clinById = {};
+  const style = (p, hi) => ({ color: hi ? c("--primary") : "#ffffff", weight: hi ? 3.5 : 1.5, fillColor: Z[p.color], fillOpacity: hi ? 0.6 : 0.42 });
+  let selected = null;
+  const sel = document.getElementById("sel");
+
+  function showInfo(p, isClinic) {
+    sel.classList.remove("d-none");
+    sel.innerHTML = `<div class="d-flex justify-content-between align-items-start"><div class="fw-semibold">${p.name}</div>
+      <span class="zone zone-${p.color} zone-sm">${T[p.color]}</span></div>
+      <div class="small text-muted mb-2">${isClinic ? p.district + (p.source === "osm" ? "" : " · " + T.approx) : T.pop + ": " + p.population.toLocaleString()}</div>
+      <div class="d-flex gap-3 small"><div><div class="text-muted">${T.preg}</div><b>${p.p_total}</b></div>
+      <div><div class="text-muted">${T.red}</div><b style="color:var(--z-red)">${p.p_red} (${p.red_pct}%)</b></div>
+      <div><div class="text-muted">${T.yellow}</div><b style="color:var(--z-yellow)">${p.p_yellow}</b></div>
+      <div><div class="text-muted">${T.kids}</div><b>${p.c_total}</b></div></div>
+      <a class="btn btn-sm btn-primary mt-2 w-100" href="${p.url}">${T.more} →</a>`;
+  }
+  function select(id) {
+    document.querySelectorAll(".district-row").forEach((r) => r.classList.toggle("active", r.dataset.id == id));
+    if (LEVEL === "district") {
+      if (selected) selected.setStyle(style(selected.feature.properties));
+      selected = byId[id]; if (!selected) return;
+      selected.setStyle(style(selected.feature.properties, true)); selected.bringToFront();
+      map.flyToBounds(selected.getBounds(), { padding: [30, 30], duration: 0.5 });
+      showInfo(selected.feature.properties, false);
+    } else {
+      const m = clinById[id]; if (!m) return;
+      map.flyTo(m.getLatLng(), 14, { duration: 0.5 }); m.openTooltip(); showInfo(m.k, true);
+    }
+  }
+
+  const districts = L.geoJSON(data, {
+    style: (f) => style(f.properties),
+    onEachFeature: (f, l) => {
+      const p = f.properties; byId[p.id] = l;
+      l.bindTooltip(p.name, { permanent: true, direction: "center", className: "map-label" });
+      l.on("click", () => select(p.id));
+      l.on("mouseover", () => { if (l !== selected) l.setStyle({ fillOpacity: 0.58 }); });
+      l.on("mouseout", () => { if (l !== selected) l.setStyle(style(p)); });
+    },
+  }).addTo(map);
+  const clinics = L.layerGroup(data.clinics.map((k) => {
+    const m = L.circleMarker([k.lat, k.lon], { radius: k.color === "red" ? 8 : 6, weight: 2, color: "#ffffff",
+      fillColor: Z[k.color], fillOpacity: k.source === "osm" ? 1 : 0.5, dashArray: k.source === "osm" ? null : "2 2" });
+    m.k = k; clinById[k.id] = m;
+    m.bindTooltip(`<b>${k.name}</b><br>${T[k.color]} · ${k.red_pct}% (${k.p_red}/${k.p_total})${k.source === "osm" ? "" : "<br><i>" + T.approx + "</i>"}`);
+    m.on("click", () => { showInfo(k, true); document.querySelectorAll(".district-row").forEach((r) => r.classList.toggle("active", r.dataset.id == k.id)); });
+    return m;
+  })).addTo(map);
+  L.control.layers(null, { [T.dist]: districts, [T.clin]: clinics }, { collapsed: false, position: "topright" }).addTo(map);
+  const legend = L.control({ position: "bottomleft" });
+  legend.onAdd = () => { const d = L.DomUtil.create("div", "map-legend");
+    d.innerHTML = ["red", "yellow", "green"].map((k) => `<div><span class="sw" style="background:${Z[k]}"></span>${T[k]}</div>`).join("")
+      + `<div class="text-muted" style="font-weight:400">≥{{ 30 }}% / ≥10% / &lt;10%</div>`; return d; };
+  legend.addTo(map);
+  map.fitBounds(districts.getBounds(), { padding: [12, 12] });
+  document.querySelectorAll(".district-row").forEach((r) => r.addEventListener("click", () => select(r.dataset.id)));
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "base.html" %}{% load zones %}
+{% block title %}{% t "Statistika" %}{% endblock %}
+{% block page_title %}{% t "Statistika" %}{% endblock %}
+{% block content %}
+{% with lvl=level %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic {{ kpi.region_color }}"><i class="bi {{ kpi.region_color|zone_icon }}"></i></div>
+    <div><div class="l">{% t "Hudud zonasi" %}</div><div class="mt-1">{% zone kpi.region_color %}</div><div class="s mt-1">{{ kpi.red_pct }}% {% t "qizil" %}</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic"><i class="bi bi-list-ol"></i></div>
+    <div><div class="l">{% if lvl == 'district' %}{% t "Tumanlar" %}{% elif lvl == 'clinic' %}{% t "Poliklinikalar" %}{% else %}{% t "Mavzelar" %}{% endif %}</div>
+      <div class="d-flex gap-2 mt-1 flex-wrap"><span class="zone zone-green zone-sm">{{ zones.green }}</span><span class="zone zone-yellow zone-sm">{{ zones.yellow }}</span><span class="zone zone-red zone-sm">{{ zones.red }}</span></div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic"><i class="bi bi-clipboard2-pulse"></i></div>
+    <div><div class="l">{% t "Erta ro'yxatga olish (12 haftagacha)" %}</div><div class="v">{{ kpi.early_reg_pct }}%</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic"><i class="bi bi-shield-plus"></i></div>
+    <div><div class="l">{% t "Emlash bajarilishi" %}</div><div class="v">{{ kpi.vacc_pct }}%</div></div></div></div>
+</div>
+
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item"><a class="nav-link {% if tab != 'rating' %}active{% endif %}" href="?tab=chart"><i class="bi bi-bar-chart"></i> {% t "Grafik" %}</a></li>
+  <li class="nav-item"><a class="nav-link {% if tab == 'rating' %}active{% endif %}" href="?tab=rating"><i class="bi bi-trophy"></i> {% t "Reyting jadvali" %}</a></li>
+</ul>
+
+{% if tab == 'rating' %}
+<div class="card">
+  <div class="card-header">{% t "Reyting: yashildan qizilga" %}<span class="sub">{% t "1-o'rin — eng yaxshi ko'rsatkich" %}</span></div>
+  <div class="table-responsive"><table class="table table-hover">
+    <thead><tr><th>#</th><th>{% if lvl == 'district' %}{% t "Tuman" %}{% elif lvl == 'clinic' %}{% t "Poliklinika" %}{% else %}{% t "Mavze" %}{% endif %}</th><th>{% t "Zona" %}</th>
+      <th class="text-end">{% t "Qizil %" %}</th><th class="text-end">{% t "Homiladorlar" %}</th><th class="text-end">{% t "12 haftagacha ro'yxat" %}</th>
+      <th class="text-end">{% t "Ko'rikka kelish" %}</th><th class="text-end">{% t "Emlash %" %}</th></tr></thead>
+    <tbody>
+    {% for r in rows %}<tr data-href="{{ r.href }}" class="row-link zrow zrow-{{ r.color }}">
+      <td class="fw-bold text-muted">{{ r.rank }}</td>
+      <td><a href="{{ r.href }}" class="fw-medium">{{ r.obj.name }}</a></td>
+      <td>{% zone r.color True %}</td>
+      <td class="text-end fw-semibold">{{ r.red_pct }}%</td>
+      <td class="text-end">{{ r.p_total }} <span class="small" style="color:var(--z-red)">({{ r.p_red }})</span></td>
+      <td class="text-end {% if r.early_pct < 60 %}fw-semibold" style="color:var(--z-red){% endif %}">{{ r.early_pct }}%</td>
+      <td class="text-end {% if r.attend_pct < 95 %}fw-semibold" style="color:var(--z-red){% endif %}">{{ r.attend_pct }}%</td>
+      <td class="text-end {% if r.vacc_pct < 95 %}fw-semibold" style="color:var(--z-red){% endif %}">{{ r.vacc_pct }}%</td>
+    </tr>{% empty %}<tr><td colspan="8" class="empty">—</td></tr>{% endfor %}
+    </tbody></table></div>
+  <div class="card-body small text-muted pt-2">{% t "Tartib: zona (yashil → sariq → qizil), keyin qizil zonadagi homiladorlar ulushi. Qizil raqam — me'yordan past." %}</div>
+</div>
+{% else %}
+<div class="row g-3">
+  <div class="col-lg-7"><div class="card h-100"><div class="card-header">{% t "Qizil zonadagi homiladorlar ulushi" %}<span class="sub">%</span></div>
+    <div class="card-body"><div style="height:{% if rows|length > 8 %}380{% else %}280{% endif %}px"><canvas id="cRed"></canvas></div>
+      <div class="legend-row"><span><span class="sw" style="background:var(--z-green)"></span>{% t "Yashil" %} &lt;10%</span><span><span class="sw" style="background:var(--z-yellow)"></span>{% t "Sariq" %} 10–30%</span><span><span class="sw" style="background:var(--z-red)"></span>{% t "Qizil" %} ≥30%</span></div></div></div></div>
+  <div class="col-lg-5"><div class="card h-100"><div class="card-header">{% t "Qizil zona sabablari" %}<span class="sub">{% t "Homiladorlar" %}</span></div>
+    <div class="card-body"><div style="height:{% if rows|length > 8 %}380{% else %}280{% endif %}px"><canvas id="cReasons"></canvas></div></div></div></div>
+</div>
+{% endif %}
+{% endwith %}
+{{ chart|json_script:"chart-data" }}
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const el = document.getElementById("cRed"); if (!el) return;
+  const d = JSON.parse(document.getElementById("chart-data").textContent);
+  const css = getComputedStyle(document.documentElement), c = (n) => css.getPropertyValue(n).trim();
+  const Z = { green: c("--z-green"), yellow: c("--z-yellow"), red: c("--z-red"), none: c("--z-none") };
+  const hbar = (labels, data, colors) => ({ type: "bar", data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 4, borderSkipped: false, maxBarThickness: 22 }] },
+    options: { indexAxis: "y", maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color: c("--muted") }, grid: { color: c("--line") }, beginAtZero: true }, y: { ticks: { color: c("--ink-2") }, grid: { display: false } } } } });
+  new Chart(el, hbar(d.labels, d.red_pct, d.colors.map((k) => Z[k])));
+  // uzun sabab nomlari qisqartiriladi, to'liq matn tooltip'da
+  const short = d.reasons.map((x) => x.length > 30 ? x.slice(0, 29) + "…" : x);
+  const rc = hbar(short, d.reason_counts, c("--z-red"));
+  rc.options.plugins.tooltip = { callbacks: { title: (items) => d.reasons[items[0].dataIndex] } };
+  new Chart(document.getElementById("cReasons"), rc);
+})();
+</script>
+{% endblock %}

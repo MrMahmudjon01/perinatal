@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ clinic.name }}{% endblock %}
+{% block crumbs %}{% if is_ovabmu %}<a href="{% url 'regions' %}">{% t "Toshkent shahri" %}</a> / {% endif %}{% if not is_clinic %}<a href="{% url 'district_dashboard' clinic.district_id %}">{{ clinic.district.name }}</a> / {% endif %}{{ clinic.name }}{% endblock %}
+{% block page_title %}{{ clinic.name }}{% endblock %}
+{% block content %}
+{% if is_clinic %}<div class="d-flex justify-content-end mb-3"><a href="{% url 'patient_create' %}" class="btn btn-primary"><i class="bi bi-person-plus"></i> {% t "Homilador ayolni ro'yxatga olish" %}</a></div>{% endif %}
+{% include "dashboard/_kpis.html" with compact=True %}
+{% include "dashboard/_region_table.html" with level="mavze" %}
+{% endblock %}

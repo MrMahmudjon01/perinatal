@@ -1,0 +1,20 @@
+{% load zones %}
+{% for a in alerts %}
+<div class="alert-item mb-2 {% if a.to_color == 'red' %}to-red{% endif %} {% if a.status == 'new' %}is-new{% endif %}">
+  <div class="d-flex justify-content-between gap-2">
+    <div class="min-w-0">
+      <div class="d-flex flex-wrap gap-1 align-items-center">{% zone a.to_color True %}
+        {% if a.status == 'new' %}<span class="badge bg-danger">{% t "YANGI" %}</span>{% elif a.status == 'seen' %}<span class="chip">{% t "ko'rildi" %}</span>{% endif %}
+        {% if a.escalated %}<span class="chip">⏫ {% t "ko'tarilgan" %}</span>{% endif %}</div>
+      <a href="{{ a.subject_url }}" class="fw-semibold d-block mt-1">{{ a.subject_name }}</a>
+      <div class="small text-muted">{{ a.clinic.name }} · {{ a.created_at|timesince }} {% t "oldin" %}</div>
+      {% if a.changes %}<div class="small mt-1">📈 {{ a.changes }}</div>{% else %}<div class="small mt-1 text-truncate" style="max-width:240px">{{ a.reasons|first|tl:lang }}</div>{% endif %}
+    </div>
+    {% if a.status == 'new' and not is_clinic %}
+    <button class="btn btn-sm btn-light align-self-start" hx-post="{% url 'alert_seen' a.id %}" hx-target="#alert-panel" title="{% t "Ko'rildi" %}"><i class="bi bi-check2"></i></button>
+    {% endif %}
+  </div>
+</div>
+{% empty %}
+<div class="empty"><i class="bi bi-check2-circle"></i>{% t "Faol signal yo'q" %}</div>
+{% endfor %}

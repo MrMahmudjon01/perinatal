@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Ma'lumot manbalari{% endblock %}
+{% block page_title %}{% t "Ma'lumot manbalari" %}{% endblock %}
+{% block content %}
+<div class="text-muted mb-3">Demo Toshkent shahri misolida, ochiq manbalarga tayangan holda tuzilgan. Bemorlar shaxsi va tahlil qiymatlari — sun'iy.</div>
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card mb-3"><div class="card-header">Real (ochiq) ma'lumotlar</div>
+      <ul class="list-group list-group-flush small">
+        <li class="list-group-item" style="background:transparent;color:var(--ink)"><b>Tumanlar aholisi</b> — Toshkent shahar statistika boshqarmasi, 2025-yil 1-oktabr holati (jami 3 164,0 ming). <a href="https://www.toshstat.uz/2025/Demografya/Demografiya.pdf" target="_blank">toshstat.uz</a></li>
+        <li class="list-group-item" style="background:transparent;color:var(--ink)"><b>Tug'ilish</b> — 2025-yil yanvar–sentabr: 47,7 ming tirik tug'ilgan (20,3‰), o'g'il bolalar 51,6%. Homiladorlar va bolalar soni shu ko'rsatkichdan tuman aholisiga mutanosib hisoblangan ({{ scale_label }}).</li>
+        <li class="list-group-item" style="background:transparent;color:var(--ink)"><b>Oilaviy poliklinikalar</b> — {{ osm_clinics }} tasi nomi va joylashuvi bilan <a href="https://www.openstreetmap.org" target="_blank">OpenStreetMap</a>dan (ODbL). Qolgan {{ synth_clinics }} tasi tuman aholisiga ko'ra (≈40 ming kishiga 1 poliklinika) qo'shilgan, joylashuvi taxminiy. Jami {{ total_clinics }} (ommaviy manbalarda shaharda 84 ta oilaviy va ko'p tarmoqli poliklinika qayd etilgan).</li>
+        <li class="list-group-item" style="background:transparent;color:var(--ink)"><b>Tuman chegaralari</b> — OpenStreetMap / Nominatim.</li>
+        <li class="list-group-item" style="background:transparent;color:var(--ink)"><b>Antenatal reja</b> — SSV bazaviy paketi: kamida 8 tashrif (≤12, 20, 26, 30, 34, 36, 38, 40-hafta), 3 ta skrining UTT (11–13, 18–20, 28–32 hafta). <a href="https://www.ishonch.org/campaign1" target="_blank">ishonch.org</a></li>
+        <li class="list-group-item" style="background:transparent;color:var(--ink)"><b>Kech ro'yxatga olish</b> — 31,1% (Samarqand davlat tibbiyot universiteti, 1000 homilador so'rovi) — demo shu ulushda generatsiya qilingan.</li>
+        <li class="list-group-item" style="background:transparent;color:var(--ink)"><b>Chaqaloq kuzatuvi</b> — patronaj, 1 yoshgacha har oy ko'rik, 1/3/6/12 oylikda nevropatolog, ortoped-jarroh, oftalmolog, LOR; 3–6 oylik va 1 yoshda qon/siydik tahlili.</li>
+        <li class="list-group-item" style="background:transparent;color:var(--ink)"><b>Emlash</b> — O'zbekiston Milliy profilaktik emlash kalendari: VGB-1, BSJ-1, Penta 1–3, OPV 1–4, Rota 1–3, Pnevmo 1–3, IPV 1–2, KPK-1, AKDS-4 ({{ vaccines }} ta doza, 0–16 oy). Isitma/o'tkir kasallikda emlash kechiktiriladi.</li>
+        <li class="list-group-item" style="background:transparent;color:var(--ink)"><b>O'sish</b> — chaqaloq vazni, bo'yi va bosh aylanasi JSST (WHO) medianlari atrofida generatsiya qilingan.</li>
+        <li class="list-group-item" style="background:transparent;color:var(--ink)"><b>Anemiya</b> — homiladorlarda anemiya (Hb&lt;110) ≈34,8% (Jahon banki, 2019); demo sariq zona chegarasi Hb&lt;100 (o'rtacha), qizil Hb&lt;70 (og'ir, JSST tasnifi).</li>
+      </ul></div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card mb-3"><div class="card-header">Sun'iy (demo) qismlar</div>
+      <ul class="small mb-0 py-2">
+        <li>Bemorlar F.I.Sh., telefon, tahlil qiymatlari — tasodifiy, real shaxslarga aloqasi yo'q</li>
+        <li>Tumanlar bo'yicha xavf farqi (Yangihayot, Sergeli yuqoriroq) — demo uchun</li>
+        <li>Mavzelar (har poliklinikada 4–6) va shifokorlar</li>
+        <li>Klinik chegaralar (rules.json) — mutaxassis tasdiqlashi kerak</li>
+      </ul></div>
+    <div class="card"><div class="card-header">Zona qoidasi</div>
+      <div class="card-body small">
+        <p class="mb-2"><b>Bemor</b> zonasi — oxirgi ko'rik tahlillari bo'yicha (rules.json). Aytilmagan qiymat xavf hisoblanmaydi. Shifokor zonani sababini yozib o'zgartira oladi.</p>
+        <p class="mb-0"><b>Hudud</b> zonasi = qizil zonadagi homiladorlar ÷ jami homiladorlar: ≥{{ red_from }}% qizil, ≥{{ yellow_from }}% sariq, aks holda yashil. Har daraja (mavze → shahar) xom sonlardan alohida hisoblanadi.</p>
+      </div></div>
+  </div>
+</div>
+{% endblock %}

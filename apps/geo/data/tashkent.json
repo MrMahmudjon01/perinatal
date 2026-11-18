@@ -1,0 +1,18 @@
+{
+  "_manba": {
+    "aholi": "Toshkent shahar statistika boshqarmasi, 'Toshkent shahrida demografik vaziyat', 2025-yil 1-oktabr holati (toshstat.uz/2025/Demografya/Demografiya.pdf, e'lon: 27.10.2025)",
+    "tugilish": "O'sha manba: 2025-yil yanvar-sentabr — 47,7 ming tirik tug'ilgan (20,3 promille), o'g'il bolalar 51,6%",
+    "poliklinikalar": "OpenStreetMap (© OpenStreetMap contributors, ODbL) — oilaviy poliklinikalar nomi va joylashuvi; OSM'da yo'q bo'lganlari 'taxminiy' deb belgilangan",
+    "chegaralar": "OpenStreetMap / Nominatim tuman chegaralari (soddalashtirilgan)",
+    "antenatal": "O'zR SSV bazaviy antenatal paket — kamida 8 tashrif: 12-haftagacha, 20, 26, 30, 34, 36, 38, 40-hafta (ishonch.org/campaign1)",
+    "emlash": "O'zbekiston Milliy profilaktik emlash kalendari (SEOJSQ qo'mitasi)"
+  },
+  "births_jan_sep_2025": 47700,
+  "boys_share": 0.516,
+  "districts": {
+    "Uchtepa": [301.4, 303.3], "Bektemir": [64.4, 70.4], "Yunusobod": [383.4, 391.1],
+    "Mirzo Ulug'bek": [335.6, 340.9], "Mirobod": [153.8, 156.1], "Shayxontohur": [368.5, 372.7],
+    "Olmazor": [409.9, 416.8], "Sergeli": [172.0, 177.7], "Yakkasaroy": [138.1, 143.8],
+    "Yashnobod": [307.7, 315.8], "Yangihayot": [184.3, 198.4], "Chilonzor": [276.4, 277.0]
+  }
+}

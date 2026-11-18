@@ -1,0 +1,104 @@
+{% extends "base.html" %}{% load zones %}
+{% block title %}{% t "Dinamika" %}{% endblock %}
+{% block page_title %}{% t "Zonalar dinamikasi" %}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+  <span class="small text-muted">{% t "Taqqoslash" %}:</span>
+  <div class="btn-group btn-group-sm">
+    <a class="btn btn-light {% if compare == 1 %}active{% endif %}" href="?compare=1&unit={{ unit }}&show={{ show }}">{% t "O'tgan oy" %}</a>
+    <a class="btn btn-light {% if compare == 3 %}active{% endif %}" href="?compare=3&unit={{ unit }}&show={{ show }}">{% t "3 oy oldin" %}</a>
+    <a class="btn btn-light {% if compare == 6 %}active{% endif %}" href="?compare=6&unit={{ unit }}&show={{ show }}">{% t "6 oy oldin" %}</a>
+  </div>
+  <span class="chip"><b>{{ base_label }}</b> → <b>{{ now_label }}</b></span>
+  {% if city %}
+  <div class="btn-group btn-group-sm ms-auto">
+    <a class="btn btn-light {% if unit == 'district' %}active{% endif %}" href="?compare={{ compare }}&unit=district&show={{ show }}"><i class="bi bi-map"></i> {% t "Tumanlar" %}</a>
+    <a class="btn btn-light {% if unit == 'clinic' %}active{% endif %}" href="?compare={{ compare }}&unit=clinic&show={{ show }}"><i class="bi bi-hospital"></i> {% t "Poliklinikalar" %}</a>
+  </div>{% endif %}
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic {{ summary.now.color }}"><i class="bi bi-activity"></i></div>
+    <div><div class="l">{% t "Umumiy qizil ulushi" %}</div>
+      <div class="v">{{ summary.now.pct }}%
+        {% if summary.delta < 0 %}<small class="fs-6" style="color:var(--z-green)"><i class="bi bi-arrow-down"></i>{{ summary.delta|stringformat:".1f"|cut:"-" }}</small>
+        {% elif summary.delta > 0 %}<small class="fs-6" style="color:var(--z-red)"><i class="bi bi-arrow-up"></i>{{ summary.delta }}</small>{% endif %}</div>
+      <div class="s">{{ base_label }}: {{ summary.before.pct }}% · {{ summary.now.r }} / {{ summary.now.t }}</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic green"><i class="bi bi-graph-down-arrow"></i></div>
+    <div><div class="l">{% t "Yaxshilandi" %}</div><div class="v" style="color:var(--z-green)">{{ summary.better }}</div>
+      <div class="s">{% t "zonasi yaxshi tomonga o'tdi" %}</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic red"><i class="bi bi-graph-up-arrow"></i></div>
+    <div><div class="l">{% t "Yomonlashdi" %}</div><div class="v" style="color:var(--z-red)">{{ summary.worse }}</div>
+      <div class="s">{% t "zonasi yomon tomonga o'tdi" %}</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic"><i class="bi bi-list-ol"></i></div>
+    <div><div class="l">{% if unit == 'district' %}{% t "Tumanlar" %}{% else %}{% t "Poliklinikalar" %}{% endif %}: {{ base_label }} → {{ now_label }}</div>
+      <div class="d-flex gap-1 mt-1 flex-wrap small align-items-center">
+        <span class="zone zone-green zone-sm">{{ summary.zones_before.green }}→{{ summary.zones_now.green }}</span>
+        <span class="zone zone-yellow zone-sm">{{ summary.zones_before.yellow }}→{{ summary.zones_now.yellow }}</span>
+        <span class="zone zone-red zone-sm">{{ summary.zones_before.red }}→{{ summary.zones_now.red }}</span></div>
+      <div class="s mt-1">{% t "O'zgarmadi" %}: {{ summary.same }}</div></div></div></div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span>{% if unit == 'district' %}{% t "Tumanlar" %}{% else %}{% t "Poliklinikalar" %}{% endif %}: {% t "zona o'zgarishi" %}</span>
+    <div class="btn-group btn-group-sm">
+      <a class="btn btn-light {% if show != 'all' %}active{% endif %}" href="?compare={{ compare }}&unit={{ unit }}&show=changed">{% t "Faqat o'zgarganlar" %} ({{ summary.better|add:summary.worse }})</a>
+      <a class="btn btn-light {% if show == 'all' %}active{% endif %}" href="?compare={{ compare }}&unit={{ unit }}&show=all">{% t "Hammasi" %} ({{ all_count }})</a>
+    </div>
+  </div>
+  <div class="table-responsive"><table class="table table-hover align-middle mb-0">
+    <thead><tr><th>{% if unit == 'district' %}{% t "Tuman" %}{% else %}{% t "Poliklinika" %}{% endif %}</th>
+      <th>{{ base_label }}</th><th></th><th>{{ now_label }}</th><th>{% t "Natija" %}</th>
+      <th class="text-end">{% t "Qizil %" %}</th><th class="text-end">{% t "O'zgarish" %}</th><th>{% t "7 oy" %}</th></tr></thead>
+    <tbody>
+    {% for r in rows %}<tr data-href="{{ r.href }}" class="row-link zrow zrow-{{ r.now.color }}">
+      <td><a href="{{ r.href }}" class="fw-medium">{{ r.obj.name }}</a>{% if unit == 'clinic' and city %}<div class="small text-muted">{{ r.obj.district.name }}</div>{% endif %}</td>
+      <td>{% zone r.before.color True %}</td>
+      <td class="text-muted"><i class="bi bi-arrow-right"></i></td>
+      <td>{% zone r.now.color True %}</td>
+      <td>{% if r.change == 'better' %}<span class="fw-semibold" style="color:var(--z-green)"><i class="bi bi-arrow-down-circle-fill"></i> {% t "Yaxshilandi" %}</span>
+        {% elif r.change == 'worse' %}<span class="fw-semibold" style="color:var(--z-red)"><i class="bi bi-arrow-up-circle-fill"></i> {% t "Yomonlashdi" %}</span>
+        {% else %}<span class="text-muted"><i class="bi bi-dash-circle"></i> {% t "O'zgarmadi" %}</span>{% endif %}</td>
+      <td class="text-end text-nowrap">{{ r.before.pct }}% → <b>{{ r.now.pct }}%</b></td>
+      <td class="text-end fw-semibold" style="color:{% if r.delta < 0 %}var(--z-green){% elif r.delta > 0 %}var(--z-red){% else %}var(--muted){% endif %}">{% if r.delta > 0 %}+{% endif %}{{ r.delta }}</td>
+      <td><div class="d-flex gap-1" title="{% for s in r.series %}{{ s.pct }}% {% endfor %}">{% for s in r.series %}<span class="spark spark-{{ s.color }}" title="{{ s.pct }}%"></span>{% endfor %}</div></td>
+    </tr>{% empty %}<tr><td colspan="8" class="empty">{% t "Bu davrda zonasi o'zgargan hudud yo'q" %}</td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6"><div class="card h-100"><div class="card-header">{% t "Umumiy qizil ulushi, %" %}<span class="sub">{{ month_labels|first }} — {{ now_label }}</span></div>
+    <div class="card-body"><div style="height:260px"><canvas id="cPct"></canvas></div></div></div></div>
+  <div class="col-lg-6"><div class="card h-100"><div class="card-header">{% if unit == 'district' %}{% t "Tumanlar" %}{% else %}{% t "Poliklinikalar" %}{% endif %} {% t "zona bo'yicha, oyma-oy" %}</div>
+    <div class="card-body"><div style="height:260px"><canvas id="cZones"></canvas></div></div></div></div>
+</div>
+{% if summary.demo %}<div class="small text-muted mt-3"><i class="bi bi-info-circle"></i> {% t "O'tgan oylar — demo tarix. Joriy oy jonli ma'lumotdan hisoblanadi; tizim har oy holatni saqlab boradi." %}</div>{% endif %}
+{{ chart|json_script:"chart-data" }}
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const d = JSON.parse(document.getElementById("chart-data").textContent);
+  const css = getComputedStyle(document.documentElement), c = (n) => css.getPropertyValue(n).trim();
+  const grid = { color: c("--line") }, ticks = { color: c("--muted") };
+  new Chart(document.getElementById("cPct"), {
+    type: "line",
+    data: { labels: d.labels, datasets: [{ data: d.pct, borderColor: c("--primary"), backgroundColor: c("--primary"),
+      borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, tension: 0.25 }] },
+    options: { maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (i) => ` ${i.parsed.y}%` } } },
+      scales: { y: { beginAtZero: true, grid, ticks: { ...ticks, callback: (v) => v + "%" } }, x: { grid: { display: false }, ticks } } },
+  });
+  const ds = (k, label) => ({ label, data: d[k], backgroundColor: c("--z-" + k), borderColor: c("--card") || "#fff",
+    borderWidth: { top: 2 }, borderRadius: 4, borderSkipped: false, maxBarThickness: 36 });
+  new Chart(document.getElementById("cZones"), {
+    type: "bar",
+    data: { labels: d.labels, datasets: [ds("green", "{% t "Yashil" %}"), ds("yellow", "{% t "Sariq" %}"), ds("red", "{% t "Qizil" %}")] },
+    options: { maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+      plugins: { legend: { position: "bottom", labels: { color: c("--ink-2"), boxWidth: 12 } } },
+      scales: { x: { stacked: true, grid: { display: false }, ticks }, y: { stacked: true, beginAtZero: true, grid, ticks: { ...ticks, precision: 0 } } } },
+  });
+})();
+</script>
+{% endblock %}

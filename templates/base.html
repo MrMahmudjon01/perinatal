@@ -1,0 +1,136 @@
+{% load static %}<!doctype html>
+<html lang="{{ lang|default:'uz' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{% block title %}Perinatal registr{% endblock %} — Perinatal registr</title>
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <script>
+    (function () { try { var t = localStorage.getItem("theme"); if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", t); document.documentElement.setAttribute("data-bs-theme", t); } catch (e) {} })();
+  </script>
+  {% block head %}{% endblock %}
+  <meta name="csrf-token" content="{{ csrf_token }}">
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+{% if user.is_authenticated %}
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="{% url 'home' %}"><span class="logo"><i class="bi bi-heart-pulse-fill"></i></span>
+      <span>{% t "Perinatal registr" %}<small>{% t "Ona va bola monitoringi" %}</small></span></a>
+    <nav>
+      <a class="side-link {% if nav == 'overview' %}active{% endif %}" href="{% url 'home' %}"><i class="bi bi-grid-1x2"></i> {% t "Umumiy ko'rinish" %}</a>
+      {% if show.map %}<a class="side-link {% if nav == 'map' %}active{% endif %}" href="{% url 'map_page' %}"><i class="bi bi-map"></i> {% t "Xarita" %}</a>{% endif %}
+      {% if show.regions %}<a class="side-link {% if nav == 'regions' %}active{% endif %}" href="{% url 'regions' %}"><i class="bi bi-buildings"></i> {% if is_clinic %}{% t "Mavzelar" %}{% elif is_district %}{% t "Poliklinikalar" %}{% else %}{% t "Hududlar" %}{% endif %}</a>{% endif %}
+
+      <div class="nav-group">{% t "Kuzatuv" %}</div>
+      <a class="side-link {% if nav == 'patients' %}active{% endif %}" href="{% url 'patient_list' %}"><i class="bi bi-person-hearts"></i> {% t "Homiladorlar" %}</a>
+      <a class="side-link {% if nav == 'children' %}active{% endif %}" href="{% url 'child_list' %}"><i class="bi bi-balloon-heart"></i> {% t "Bolalar (0–2 yosh)" %}</a>
+      {% if show.vaccination %}<a class="side-link {% if nav == 'vaccination' %}active{% endif %}" href="{% url 'vaccination_page' %}"><i class="bi bi-shield-plus"></i> {% t "Emlash" %}</a>{% endif %}
+      {% if show.sessions %}<a class="side-link {% if nav == 'sessions' %}active{% endif %}" href="{% url 'session_list' %}"><i class="bi bi-megaphone"></i> {% t "Emlash e'lonlari" %}</a>{% endif %}
+      {% if show.patronage %}<a class="side-link {% if nav == 'patronage' %}active{% endif %}" href="{% url 'patronage_page' %}"><i class="bi bi-house-heart"></i> {% t "Patronaj (kelmaganlar)" %}</a>{% endif %}
+
+      <div class="nav-group">{% t "Choralar" %}</div>
+      <a class="side-link {% if nav == 'alerts' %}active{% endif %}" href="{% url 'alert_list' %}"><i class="bi bi-bell"></i> {% t "Signallar" %} <span class="badge rounded-pill bg-danger d-none" data-alert-badge>0</span></a>
+      {% if show.referrals %}<a class="side-link {% if nav == 'referrals' %}active{% endif %}" href="{% url 'referral_list' %}"><i class="bi bi-send"></i> {% t "Yo'llanmalar" %}</a>{% endif %}
+
+      <div class="nav-group">{% t "Tahlil" %}</div>
+      {% if show.stats %}<a class="side-link {% if nav == 'stats' %}active{% endif %}" href="{% url 'stats_page' %}"><i class="bi bi-bar-chart-line"></i> {% t "Statistika" %}</a>{% endif %}
+      {% if show.dynamics %}<a class="side-link {% if nav == 'dynamics' %}active{% endif %}" href="{% url 'dynamics_page' %}"><i class="bi bi-graph-up-arrow"></i> {% t "Dinamika" %}</a>{% endif %}
+      {% if show.staff %}<a class="side-link {% if nav == 'staff' %}active{% endif %}" href="{% url 'staff_list' %}"><i class="bi bi-person-gear"></i> {% t "Xodimlar" %}</a>{% endif %}
+      <a class="side-link {% if nav == 'telegram' %}active{% endif %}" href="{% url 'notification_log' %}"><i class="bi bi-telegram"></i> {% t "Telegram xabarlar" %}</a>
+    </nav>
+    <div class="side-foot"><i class="bi bi-geo-alt"></i> {{ user.scope_label }}</div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn burger" type="button" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="bi bi-list"></i></button>
+      <div class="me-auto">
+        <div class="crumbs">{% block crumbs %}{{ user.scope_label }}{% endblock %}</div>
+        <div class="page-title">{% block page_title %}{% endblock %}</div>
+      </div>
+      {% if is_ovabmu %}
+      <div class="dropdown">
+        <button class="btn btn-light d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" style="height:38px">
+          <i class="bi bi-geo-alt" style="color:var(--primary)"></i>
+          <span class="fw-medium">{% if view_district %}{{ view_district.name }}{% else %}{% t "Butun shahar" %}{% endif %}</span><i class="bi bi-chevron-down small"></i></button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="max-height:70vh;overflow:auto">
+          <li><a class="dropdown-item {% if not view_district %}active{% endif %}" href="{% url 'set_view_district' 0 %}?next={{ request.get_full_path|urlencode }}"><i class="bi bi-buildings"></i> {% t "Butun shahar" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          {% for d in all_districts %}<li><a class="dropdown-item {% if view_district.id == d.id %}active{% endif %}" href="{% url 'set_view_district' d.id %}?next={{ request.get_full_path|urlencode }}">{{ d.name }}</a></li>{% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      {% if scope_clinics %}
+      <div class="dropdown">
+        <button class="btn btn-light d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" style="height:38px;max-width:260px" id="clinic-filter">
+          <i class="bi bi-hospital" style="color:var(--primary)"></i>
+          <span class="fw-medium text-truncate">{% if view_clinic %}{{ view_clinic.name }}{% else %}{% t "Barcha poliklinikalar" %}{% endif %}</span><i class="bi bi-chevron-down small"></i></button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="max-height:70vh;overflow:auto">
+          <li><a class="dropdown-item {% if not view_clinic %}active{% endif %}" href="{% url 'set_view_clinic' 0 %}?next={{ request.get_full_path|urlencode }}"><i class="bi bi-buildings"></i> {% t "Barcha poliklinikalar" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          {% for c in scope_clinics %}<li><a class="dropdown-item {% if view_clinic.id == c.id %}active{% endif %}" href="{% url 'set_view_clinic' c.id %}?next={{ request.get_full_path|urlencode }}">{{ c.name }}</a></li>{% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      <div class="dropdown">
+        <button class="icon-btn" type="button" data-bs-toggle="dropdown" title="Til / Язык / Language"><span class="small fw-semibold">{% for c, n, s in langs %}{% if c == lang %}{{ s }}{% endif %}{% endfor %}</span></button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+          {% for c, n, s in langs %}<li><a class="dropdown-item {% if c == lang %}active{% endif %}" href="{% url 'set_lang' c %}?next={{ request.get_full_path|urlencode }}">{{ s }} · {{ n }}</a></li>{% endfor %}
+        </ul>
+      </div>
+      <button class="icon-btn" type="button" id="theme-btn" title="{% t "Kun rejimi" %} / {% t "Tun rejimi" %}"><i class="bi bi-moon-stars"></i></button>
+      <a class="icon-btn" href="{% url 'alert_list' %}" title="{% t "Signallar" %}"><i class="bi bi-bell"></i><span class="badge rounded-pill bg-danger d-none" data-alert-badge>0</span></a>
+      <div class="dropdown">
+        <a class="user-chip" href="#" data-bs-toggle="dropdown">
+          <span class="av">{{ user_initials }}</span>
+          <span class="meta">{{ user.full_name|default:user.username }}<br><small>{% t user.role_label %}</small></span>
+          <i class="bi bi-chevron-down small text-muted"></i>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+          <li><span class="dropdown-item-text small text-muted">{{ user.scope_label }}</span></li>
+          <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="bi bi-person-gear"></i> {% t "Profil" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="dropdown-item text-danger"><i class="bi bi-box-arrow-right"></i> {% t "Chiqish" %}</button></form></li>
+        </ul>
+      </div>
+    </header>
+    <main class="content">
+      {% for m in messages %}
+      <div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags }}{% endif %} alert-dismissible fade show">{{ m }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+      {% endfor %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% else %}
+  {% block public %}{% endblock %}
+{% endif %}
+<div id="toasts" class="toast-container position-fixed top-0 end-0 p-3"></div>
+<script src="{% static 'vendor/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'vendor/htmx.min.js' %}"></script>
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
+<script>
+  if (window.Chart) { Chart.defaults.font.family = '"IBM Plex Sans", system-ui, sans-serif'; Chart.defaults.font.size = 12; }
+  (function () {
+    const b = document.getElementById("theme-btn"); if (!b) return;
+    const ic = () => b.innerHTML = document.documentElement.getAttribute("data-theme") === "dark" ? '<i class="bi bi-sun"></i>' : '<i class="bi bi-moon-stars"></i>';
+    ic();
+    b.onclick = () => {
+      const t = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", t); document.documentElement.setAttribute("data-bs-theme", t);
+      try { localStorage.setItem("theme", t); } catch (e) {}
+      ic(); if (document.querySelector("canvas")) location.reload();
+    };
+  })();
+  document.addEventListener("click", (e) => { const tr = e.target.closest("tr[data-href]"); if (tr && !e.target.closest("a,button,form,input")) location.href = tr.dataset.href; });
+</script>
+{% if user.is_authenticated %}<script src="{% static 'js/app.js' %}"></script>{% endif %}
+{% block scripts %}{% endblock %}
+</body>
+</html>

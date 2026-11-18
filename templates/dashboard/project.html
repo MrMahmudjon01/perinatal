@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}{% t "Loyiha haqida" %}{% endblock %}
+{% block page_title %}{% t "Loyiha haqida" %}{% endblock %}
+{% block content %}
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item"><a class="nav-link {% if tab == 'problem' %}active{% endif %}" href="?tab=problem"><i class="bi bi-bullseye"></i> Muammo va yechim</a></li>
+  <li class="nav-item"><a class="nav-link {% if tab == 'impact' %}active{% endif %}" href="?tab=impact"><i class="bi bi-graph-up-arrow"></i> Ta'sir (jonli)</a></li>
+  <li class="nav-item"><a class="nav-link {% if tab == 'business' %}active{% endif %}" href="?tab=business"><i class="bi bi-briefcase"></i> Biznes model</a></li>
+  <li class="nav-item"><a class="nav-link {% if tab == 'legal' %}active{% endif %}" href="?tab=legal"><i class="bi bi-shield-check"></i> Qonunchilik va xavfsizlik</a></li>
+</ul>
+
+{% if tab == 'problem' %}
+<div class="row g-3">
+  <div class="col-lg-6"><div class="card h-100"><div class="card-header"><span><i class="bi bi-exclamation-octagon" style="color:var(--z-red)"></i> Muammo</span></div><div class="card-body">
+    <ul class="mb-0">
+      <li class="mb-2">Toshkentda yiliga <b>~63 ming</b> tug'ruq (2025-yil yanvar–sentabr: 47,7 ming — toshstat). Yuqori xavfli homiladorlar qog'oz jurnallar va Excel'da kuzatiladi.</li>
+      <li class="mb-2">Homiladorlarning <b>31,1%</b> kech ro'yxatga olinadi (12 haftadan keyin) — erta skrining o'tkazib yuboriladi.</li>
+      <li class="mb-2">Homiladorlarda anemiya <b>~34,8%</b> (Jahon banki, 2019) — tahlil yomonlashsa ham mutaxassis kech biladi.</li>
+      <li class="mb-2">Tuman va OvaBMU real vaqtda «qaysi hudud qizilda» degan rasmni ko'rmaydi; hisobot qo'lda, kechikib keladi.</li>
+      <li>Shifokor «chora ko'rdim» deb yozsa, buni hech kim tekshirmaydi.</li>
+    </ul></div></div></div>
+  <div class="col-lg-6"><div class="card h-100"><div class="card-header"><span><i class="bi bi-lightbulb" style="color:var(--z-green)"></i> Yechim</span></div><div class="card-body">
+    <ul class="mb-0">
+      <li class="mb-2"><b>Avtomatik rang zonalari:</b> har ko'rik/tahlil kiritilganda ona va bola qizil/sariq/yashil — shaffof qoidalar (rules.json) asosida.</li>
+      <li class="mb-2"><b>Avtomatik signal:</b> sariq → tuman shifokoriga, qizil → OvaBMU ga; javobsiz qolsa 2 soatda yuqoriga ko'tariladi.</li>
+      <li class="mb-2"><b>AI:</b> shifokor ko'rikni o'zbekcha <b>ovozda</b> aytadi → VoiceLab STT + LLM 13 maydonni to'ldiradi; <b>AI xulosa</b> me'yorlar bilan solishtirib dinamikani tahlil qiladi.</li>
+      <li class="mb-2"><b>Soxtalashtirishga qarshi:</b> har ko'rik va chora onaga Telegram'da boradi, ona «Tasdiqlayman / Bunday bo'lmadi» deydi.</li>
+      <li><b>Monitoring:</b> poliklinika → tuman → shahar, xarita, reyting, oyma-oy dinamika, emlash e'lonlari va eslatmalar.</li>
+    </ul></div></div></div>
+</div>
+
+{% elif tab == 'impact' %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic"><i class="bi bi-stopwatch"></i></div><div><div class="l">Qizil signalga o'rtacha javob</div><div class="v">{% if m.resp_min is not None %}{{ m.resp_min }} <small class="fs-6 text-muted">daq.</small>{% else %}—{% endif %}</div><div class="s">qog'ozda — kunlar</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic green"><i class="bi bi-clipboard2-pulse"></i></div><div><div class="l">Erta ro'yxatga olish</div><div class="v">{{ kpi.early_reg_pct }}%</div><div class="s">12 haftagacha</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic"><i class="bi bi-calendar-check"></i></div><div><div class="l">Ko'rikka kelish</div><div class="v">{{ kpi.attendance_pct }}%</div><div class="s">muddati o'tmaganlar</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic"><i class="bi bi-shield-plus"></i></div><div><div class="l">Emlash bajarilishi</div><div class="v">{{ kpi.vacc_pct }}%</div><div class="s">{{ kpi.vacc_overdue }} kechikkan</div></div></div></div>
+</div>
+<div class="card"><div class="card-header">O'lchanadigan maqsadlar (pilot, 6 oy)</div><div class="table-responsive"><table class="table mb-0">
+  <thead><tr><th>Ko'rsatkich</th><th>Hozir (tizimda)</th><th>Maqsad</th><th>Qanday o'lchanadi</th></tr></thead><tbody>
+  <tr><td>Qizil signalga javob vaqti</td><td>{% if m.resp_min is not None %}{{ m.resp_min }} daq.{% else %}—{% endif %}</td><td>&lt; 60 daq.</td><td>signal → «Ko'rildi» vaqti</td></tr>
+  <tr><td>Javobsiz qolib ko'tarilgan signallar</td><td>{{ m.escalated_pct }}%</td><td>&lt; 10%</td><td>eskalatsiya ulushi</td></tr>
+  <tr><td>Qizil zonada yotqizish / order</td><td>{{ m.red_hosp_pct }}%</td><td>&gt; 80%</td><td>yopilgan qizil signallar chorasi</td></tr>
+  <tr><td>Erta ro'yxatga olish (≤12 hafta)</td><td>{{ kpi.early_reg_pct }}%</td><td>&gt; 80%</td><td>birinchi ko'rik haftasi</td></tr>
+  <tr><td>Ko'rikka kelish</td><td>{{ kpi.attendance_pct }}%</td><td>&gt; 90%</td><td>keyingi ko'rik sanasi o'tmaganlar</td></tr>
+  <tr><td>Emlash o'z vaqtida</td><td>{{ kpi.vacc_pct }}%</td><td>&gt; 95%</td><td>milliy kalendar bo'yicha</td></tr>
+  </tbody></table></div></div>
+
+{% elif tab == 'business' %}
+<div class="row g-3">
+  <div class="col-lg-6"><div class="card h-100"><div class="card-header">Mijoz va daromad modeli</div><div class="card-body">
+    <p><b>B2G SaaS:</b> mijoz — Sog'liqni saqlash vazirligi / Toshkent shahar sog'liqni saqlash bosh boshqarmasi. Litsenziya — poliklinika boshiga oylik obuna.</p>
+    <table class="table table-sm small"><tbody>
+      <tr><td>Narx (taxmin)</td><td class="text-end"><b>1,5 mln so'm</b> / poliklinika / oy</td></tr>
+      <tr><td>Toshkent shahri</td><td class="text-end">~84 poliklinika (OSM) → <b>~1,5 mlrd so'm / yil</b></td></tr>
+      <tr><td>Qo'shimcha</td><td class="text-end">DMED integratsiyasi, o'qitish, analitik hisobotlar</td></tr>
+      <tr><td>Grant / hamkorlik imkoniyati</td><td class="text-end">IT Park, onalik va bolalik dasturlari</td></tr>
+    </tbody></table>
+    <div class="small text-muted">Raqamlar — dastlabki taxmin, pilotda aniqlashtiriladi.</div>
+  </div></div></div>
+  <div class="col-lg-6"><div class="card h-100"><div class="card-header">Xarajatlar (taxmin, oyiga)</div><div class="card-body">
+    <table class="table table-sm small"><tbody>
+      <tr><td>Server (O'zbekistondagi data-markaz)</td><td class="text-end">3–5 mln so'm</td></tr>
+      <tr><td>VoiceLab STT + LLM</td><td class="text-end">ko'rik boshiga bir necha yuz so'm</td></tr>
+      <tr><td>Telegram bot</td><td class="text-end">bepul</td></tr>
+      <tr><td>Qo'llab-quvvatlash (2 kishi)</td><td class="text-end">asosiy xarajat</td></tr>
+    </tbody></table>
+    <p class="mb-0 small">Bitta poliklinika litsenziyasi uning AI va server xarajatidan bir necha barobar yuqori — <b>Toshkentning o'zida o'zini qoplaydi</b>.</p>
+  </div></div></div>
+  <div class="col-lg-7"><div class="card h-100"><div class="card-header">Raqobat</div><div class="table-responsive"><table class="table table-sm small mb-0 align-middle">
+    <thead><tr><th></th><th class="text-center">Qog'oz / Excel</th><th class="text-center">DMED (umumiy EMK)</th><th class="text-center">Perinatal registr</th></tr></thead><tbody>
+    <tr><td>Avtomatik xavf zonasi</td><td class="text-center">—</td><td class="text-center">—</td><td class="text-center" style="color:var(--z-green)"><i class="bi bi-check-lg"></i></td></tr>
+    <tr><td>Yomonlashsa avtomatik signal + eskalatsiya</td><td class="text-center">—</td><td class="text-center">—</td><td class="text-center" style="color:var(--z-green)"><i class="bi bi-check-lg"></i></td></tr>
+    <tr><td>O'zbekcha ovozli kiritish (AI)</td><td class="text-center">—</td><td class="text-center">—</td><td class="text-center" style="color:var(--z-green)"><i class="bi bi-check-lg"></i></td></tr>
+    <tr><td>Ona tasdig'i (soxtalashtirishga qarshi)</td><td class="text-center">—</td><td class="text-center">—</td><td class="text-center" style="color:var(--z-green)"><i class="bi bi-check-lg"></i></td></tr>
+    <tr><td>Hudud monitoringi (xarita, reyting, dinamika)</td><td class="text-center">—</td><td class="text-center">qisman</td><td class="text-center" style="color:var(--z-green)"><i class="bi bi-check-lg"></i></td></tr>
+    <tr><td>Elektron tibbiy karta</td><td class="text-center">—</td><td class="text-center" style="color:var(--z-green)"><i class="bi bi-check-lg"></i></td><td class="text-center">DMED bilan integratsiya</td></tr>
+    </tbody></table></div><div class="card-body small text-muted pt-2">Biz DMED'ning raqobatchisi emas, uning ustidagi <b>perinatal xavf moduli</b>miz.</div></div></div>
+  <div class="col-lg-5"><div class="card h-100"><div class="card-header">O'sish rejasi</div><div class="card-body small">
+    <ol class="mb-0 ps-3">
+      <li class="mb-2"><b>0–3 oy:</b> Toshkentda 1 tumanda pilot (Chilonzor, 7 poliklinika).</li>
+      <li class="mb-2"><b>3–9 oy:</b> butun Toshkent, DMED bilan integratsiya.</li>
+      <li class="mb-2"><b>9–18 oy:</b> 14 hudud; neonatal va bolalar moduli kengayadi.</li>
+      <li><b>Keyin:</b> vazirlik uchun prognoz analitikasi, boshqa davlatlarga (o'zbek/rus tilli Markaziy Osiyo).</li>
+    </ol></div></div></div>
+</div>
+
+{% else %}
+<div class="row g-3">
+  <div class="col-lg-6"><div class="card h-100"><div class="card-header">Qonunchilikka muvofiqlik</div><div class="card-body small">
+    <ul class="mb-0 ps-3">
+      <li class="mb-2"><b>«Shaxsga doir ma'lumotlar to'g'risida»gi Qonun (O'RQ-547, 2019):</b> ro'yxatga olishda onaning roziligi qayd etiladi (hozir {{ consent_pct }}% bemorda); ma'lumot faqat tibbiy kuzatuv maqsadida ishlatiladi.</li>
+      <li class="mb-2"><b>Ma'lumotlarni lokalizatsiya qilish (27¹-modda):</b> fuqarolarning shaxsiy ma'lumotlari O'zbekiston hududidagi serverlarda saqlanadi — joriy etishda mahalliy data-markaz; ovoz mahalliy provayder (VoiceLab) orqali qayta ishlanadi.</li>
+      <li class="mb-2"><b>Tibbiy sir</b> (fuqarolar sog'lig'ini saqlash to'g'risidagi qonunchilik): har xodim faqat o'z hududini ko'radi; kim qaysi kartani ochgani audit jurnalida (hozir {{ audit_n }} yozuv).</li>
+      <li class="mb-2"><b>SSV standartlari:</b> antenatal kuzatuv (8 tashrif), milliy emlash kalendari; me'yorlar JSST, ISSHP, FIGO manbalaridan.</li>
+      <li><b>Qaror shifokorda:</b> AI faqat yordamchi — maydonlarni to'ldiradi va xulosa taklif qiladi, zona shaffof qoidalar bilan belgilanadi, hech narsa tasdiqsiz saqlanmaydi.</li>
+    </ul></div></div></div>
+  <div class="col-lg-6"><div class="card h-100"><div class="card-header">Amalga oshirilgan himoya choralari</div><div class="card-body small">
+    <ul class="mb-0 ps-3">
+      <li class="mb-2"><i class="bi bi-diagram-3"></i> Rolga asoslangan kirish: poliklinika → o'z poliklinikasi, tuman → o'z tumani, OvaBMU → shahar.</li>
+      <li class="mb-2"><i class="bi bi-journal-text"></i> Audit jurnali: ko'rish, tahrirlash, ko'rik, AI so'rovi, onaga xabar — vaqt va IP bilan.</li>
+      <li class="mb-2"><i class="bi bi-key"></i> Kuchli parollar, 5 xato urinishdan keyin 15 daqiqa blok, xodimni bloklash, parol faqat bir marta ko'rsatiladi.</li>
+      <li class="mb-2"><i class="bi bi-mic-mute"></i> Audio matnga aylangach VoiceLab'dan darhol o'chiriladi.</li>
+      <li class="mb-2"><i class="bi bi-telegram"></i> Bot faqat registrdagi telefon egasiga ochiladi; onaga zona va tashxis aytilmaydi, vahimali so'zlar filtrlanadi.</li>
+      <li><i class="bi bi-lock"></i> HTTPS, qidiruv tizimlaridan yashirilgan (noindex), parol bilan himoyalangan kirish.</li>
+    </ul></div></div></div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ s.vaccine.code }}{% endblock %}
+{% block crumbs %}<a href="{% url 'session_list' %}">{% t "Emlash e'lonlari" %}</a> / {{ s.clinic.name }}{% endblock %}
+{% block page_title %}{{ s.vaccine.code }} — {{ s.date|date:"d.m.Y" }} · {{ s.time|time:"H:i" }}{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic"><i class="bi bi-shield-plus"></i></div><div><div class="l">{% t "Vaksina" %}</div><div class="fw-semibold">{{ s.vaccine.name }}</div><div class="s">{{ s.vaccine.disease }}</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic"><i class="bi bi-people"></i></div><div><div class="l">{% t "Taklif qilingan" %}</div><div class="v">{{ invites|length }}</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic green"><i class="bi bi-telegram"></i></div><div><div class="l">{% t "Eslatmalar" %}</div>
+    <div class="s mt-1">{% if s.status == 'planned' %}{{ s.days_left }} {% t "kun qoldi" %}{% else %}{{ s.get_status_display }}{% endif %}</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic"><i class="bi bi-geo-alt"></i></div><div><div class="l">{{ s.clinic.name }}</div><div class="s">{{ s.room }}</div>{% if s.note %}<div class="s">{{ s.note }}</div>{% endif %}</div></div></div>
+</div>
+<form method="post" action="{% url 'session_attend' s.id %}">{% csrf_token %}
+<div class="card"><div class="card-header">{% t "Taklif qilingan bolalar" %}
+  {% if can_edit and s.status == 'planned' %}<span class="d-flex gap-2">
+    <button class="btn btn-sm btn-primary"><i class="bi bi-check2-square"></i> {% t "Belgilanganlar emlandi" %}</button>
+    <button name="finish" value="1" class="btn btn-sm btn-success"><i class="bi bi-flag"></i> {% t "Saqlash va e'lonni yopish" %}</button></span>{% endif %}</div>
+  <div class="table-responsive"><table class="table table-hover">
+    <thead><tr>{% if can_edit %}<th style="width:36px"><input type="checkbox" class="form-check-input" onclick="document.querySelectorAll('input[name=invite]').forEach(c=>c.checked=this.checked)"></th>{% endif %}
+      <th>{% t "Ism" %}</th><th>{% t "Yosh" %}</th><th>{% t "Ona" %}</th><th>{% t "Telefon" %}</th><th>Telegram</th><th>3 {% t "kun" %}</th><th>1 {% t "kun" %}</th><th>{% t "Holat" %}</th></tr></thead><tbody>
+    {% for i in invites %}<tr>
+      {% if can_edit %}<td>{% if not i.attended %}<input type="checkbox" class="form-check-input" name="invite" value="{{ i.id }}">{% endif %}</td>{% endif %}
+      <td><a href="{% url 'child_detail' i.child_id %}" class="fw-medium">{{ i.child.full_name }}</a></td>
+      <td class="small">{{ i.child.age_label }}</td><td class="small">{{ i.child.mother.short_name }}</td><td class="small">{{ i.child.mother.phone }}</td>
+      <td>{% if i.child.mother.telegram_chat_id %}<i class="bi bi-telegram" style="color:var(--primary)"></i>{% else %}<span class="small text-muted">—</span>{% endif %}</td>
+      <td class="small">{% if i.reminder3_at %}<i class="bi bi-check2" style="color:var(--z-green)"></i> {{ i.reminder3_at|date:"d.m H:i" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+      <td class="small">{% if i.reminder1_at %}<i class="bi bi-check2" style="color:var(--z-green)"></i> {{ i.reminder1_at|date:"d.m H:i" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+      <td>{% if i.attended %}<span class="zone zone-green zone-sm"><i class="bi bi-check-circle-fill"></i> {% t "emlandi" %}</span>{% else %}<span class="chip">{% t "kutilmoqda" %}</span>{% endif %}</td>
+    </tr>{% empty %}<tr><td colspan="9" class="empty">{% t "Mos bola topilmadi" %}</td></tr>{% endfor %}
+  </tbody></table></div></div>
+</form>
+{% if can_edit and s.status == 'planned' %}<form method="post" action="{% url 'session_cancel' s.id %}" class="mt-3">{% csrf_token %}<button class="btn btn-sm btn-light text-danger" onclick="return confirm('?')"><i class="bi bi-x-circle"></i> {% t "E'lonni bekor qilish" %}</button></form>{% endif %}
+{% endblock %}

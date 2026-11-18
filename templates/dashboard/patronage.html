@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% load zones %}
+{% block title %}{% t "Patronaj (kelmaganlar)" %}{% endblock %}
+{% block page_title %}{% t "Patronaj (kelmaganlar)" %}{% endblock %}
+{% block content %}
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#t-m">{% t "Ko'rikka kelmagan homiladorlar" %} <span class="badge text-bg-danger">{{ p_count }}</span></button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-c">{% t "Ko'rikka kelmagan bolalar" %} <span class="badge text-bg-warning">{{ c_count }}</span></button></li>
+</ul>
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="t-m"><div class="card"><form method="post" action="{% url 'remind_missed' %}" class="d-flex justify-content-between align-items-center p-3 border-bottom gap-2 flex-wrap">{% csrf_token %}<input type="hidden" name="kind" value="mother"><input type="hidden" name="all" value="1"><input type="hidden" name="next" value="{{ request.get_full_path }}"><span class="small text-muted"><i class="bi bi-info-circle"></i> {% t "Shifokor onaga botda xotirjam eslatma yuboradi: «ko'rikka kelmadingiz, iltimos keling»" %}</span><button class="btn btn-sm btn-primary" onclick="return confirm('{% t "Ro'yxatdagi hammaga eslatma yuborilsinmi?" %}')"><i class="bi bi-send"></i> {% t "Hammasiga eslatma" %}</button></form><div class="table-responsive"><table class="table table-hover">
+    <thead><tr><th>{% t "F.I.Sh." %}</th><th>{% t "Hafta" %}</th><th>{% t "Keyingi ko'rik" %}</th><th>{% t "Kechikish" %}</th><th>{% t "Hudud" %}</th><th>{% t "Telefon" %}</th><th></th></tr></thead><tbody>
+    {% for p in patients %}<tr data-href="{% url 'patient_detail' p.id %}" class="row-link">
+      <td><a href="{% url 'patient_detail' p.id %}" class="fw-medium">{{ p.short_name }}</a></td><td>{{ p.gestational_weeks }}</td>
+      <td>{{ p.next_visit_date|date:"d.m.Y" }}</td><td class="fw-semibold" style="color:var(--z-red)">{{ p.next_visit_date|days_ago }} {% t "kun" %}</td>
+      <td class="small">{{ p.mavze.name }}, {{ p.mavze.clinic.name }}</td><td class="small">{{ p.phone }}</td><td class="text-end text-nowrap" onclick="event.stopPropagation()">{% if p.sent_at %}<span class="small text-muted" title="{% t "Oxirgi eslatma" %}"><i class="bi bi-check2"></i> {{ p.sent_at|date:"d.m H:i" }}</span> {% endif %}<span id="rm-mother-{{ p.id }}"><button class="btn btn-sm btn-outline-primary" hx-post="{% url 'remind_missed' %}" hx-vals='{"kind": "mother", "id": "{{ p.id }}"}' hx-target="#rm-mother-{{ p.id }}" hx-swap="innerHTML"><i class="bi bi-telegram"></i> {% t "Eslatma" %}</button></span></td></tr>
+    {% empty %}<tr><td colspan="7" class="empty"><i class="bi bi-check2-circle"></i>—</td></tr>{% endfor %}
+    </tbody></table></div></div></div>
+  <div class="tab-pane fade" id="t-c"><div class="card"><form method="post" action="{% url 'remind_missed' %}" class="d-flex justify-content-between align-items-center p-3 border-bottom gap-2 flex-wrap">{% csrf_token %}<input type="hidden" name="kind" value="child"><input type="hidden" name="all" value="1"><input type="hidden" name="next" value="{{ request.get_full_path }}"><span class="small text-muted"><i class="bi bi-info-circle"></i> {% t "Shifokor onaga botda xotirjam eslatma yuboradi: «ko'rikka kelmadingiz, iltimos keling»" %}</span><button class="btn btn-sm btn-primary" onclick="return confirm('{% t "Ro'yxatdagi hammaga eslatma yuborilsinmi?" %}')"><i class="bi bi-send"></i> {% t "Hammasiga eslatma" %}</button></form><div class="table-responsive"><table class="table table-hover">
+    <thead><tr><th>{% t "Ism" %}</th><th>{% t "Yosh" %}</th><th>{% t "Keyingi ko'rik" %}</th><th>{% t "Kechikish" %}</th><th>{% t "Ona" %}</th><th>{% t "Telefon" %}</th><th></th></tr></thead><tbody>
+    {% for c in children %}<tr data-href="{% url 'child_detail' c.id %}" class="row-link">
+      <td><a href="{% url 'child_detail' c.id %}" class="fw-medium">{{ c.full_name }}</a></td><td>{{ c.age_label }}</td>
+      <td>{{ c.next_visit_date|date:"d.m.Y" }}</td><td class="fw-semibold" style="color:var(--z-red)">{{ c.next_visit_date|days_ago }} {% t "kun" %}</td>
+      <td class="small">{{ c.mother.short_name }}</td><td class="small">{{ c.mother.phone }}</td><td class="text-end text-nowrap" onclick="event.stopPropagation()">{% if c.sent_at %}<span class="small text-muted" title="{% t "Oxirgi eslatma" %}"><i class="bi bi-check2"></i> {{ c.sent_at|date:"d.m H:i" }}</span> {% endif %}<span id="rm-child-{{ c.id }}"><button class="btn btn-sm btn-outline-primary" hx-post="{% url 'remind_missed' %}" hx-vals='{"kind": "child", "id": "{{ c.id }}"}' hx-target="#rm-child-{{ c.id }}" hx-swap="innerHTML"><i class="bi bi-telegram"></i> {% t "Eslatma" %}</button></span></td></tr>
+    {% empty %}<tr><td colspan="7" class="empty">—</td></tr>{% endfor %}
+    </tbody></table></div></div></div>
+</div>
+{% endblock %}

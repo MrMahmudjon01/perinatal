@@ -1,0 +1,16 @@
+{% load zones %}
+{% include "dashboard/_kpis.html" %}
+<div class="row g-3">
+  <div class="col-lg-6"><div class="card h-100">
+    <div class="card-header"><span>{% t "Eng og'ir hududlar" %}</span><a class="small fw-normal" href="{% url 'regions' %}">{% t "Barchasi" %} →</a></div>
+    <table class="table table-hover"><thead><tr><th>{% if level == 'district' %}{% t "Tuman" %}{% elif level == 'clinic' %}{% t "Poliklinika" %}{% else %}{% t "Mavze" %}{% endif %}</th><th>{% t "Zona" %}</th><th class="text-end">{% t "Qizil %" %}</th></tr></thead><tbody>
+    {% for r in worst %}<tr data-href="{{ r.href }}" class="row-link"><td class="fw-medium">{{ r.obj.name }}</td><td>{% zone r.color True %}</td><td class="text-end fw-semibold">{{ r.red_pct }}% <span class="text-muted fw-normal small">({{ r.p_red }}/{{ r.p_total }})</span></td></tr>
+    {% empty %}<tr><td colspan="3" class="empty">—</td></tr>{% endfor %}
+    </tbody></table></div></div>
+  <div class="col-lg-6"><div class="card h-100">
+    <div class="card-header"><span><i class="bi bi-exclamation-octagon-fill" style="color:var(--z-red)"></i> {% t "E'tibor talab qiladi" %}</span><a class="small fw-normal" href="{% url 'patient_list' %}?color=red">{% t "Barchasi" %} →</a></div>
+    <table class="table table-hover"><tbody>
+    {% for p in attention %}<tr data-href="{% url 'patient_detail' p.id %}" class="row-link"><td><a href="{% url 'patient_detail' p.id %}" class="fw-medium text-nowrap">{{ p.short_name }}</a><div class="small text-muted text-nowrap">{{ p.mavze.clinic.name }}</div></td><td class="small">{{ p.color_reasons|first|tl:lang }}</td></tr>
+    {% empty %}<tr><td class="empty"><i class="bi bi-check2-circle"></i>—</td></tr>{% endfor %}
+    </tbody></table></div></div>
+</div>

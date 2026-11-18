@@ -1,0 +1,110 @@
+{% extends "base.html" %}{% load zones %}
+{% block title %}{{ c.full_name }}{% endblock %}
+{% block crumbs %}<a href="{% url 'child_list' %}">{% t "Bolalar" %}</a> / <a href="{% url 'patient_detail' c.mother_id %}">{{ c.mother.short_name }}</a>{% endblock %}
+{% block page_title %}{{ c.full_name }}{% endblock %}
+{% block content %}
+{% with last=visits|first %}
+<div class="card mb-3"><div class="card-body d-flex flex-wrap gap-3 align-items-center justify-content-between">
+  <div class="profile-head"><div class="av"><i class="bi bi-balloon-heart"></i></div>
+    <div><div class="d-flex flex-wrap gap-2 align-items-center"><span class="fw-semibold fs-5">{{ c.full_name }}</span>{% zone c.current_color %}</div>
+      <div class="text-muted small">{{ c.get_sex_display }} · {{ c.age_label }} · {{ c.birth_date|date:"d.m.Y" }} · {% t "Ona" %}: <a href="{% url 'patient_detail' c.mother_id %}">{{ c.mother.short_name }}</a></div>
+      {% if responsible %}<div class="small mt-1"><i class="bi bi-person-badge" style="color:var(--primary)"></i> {% t "Mas'ul" %}:
+        {% for r in responsible %}{% if r.clinic_role != 'nurse' or not r.mavze_id or r.mavze_id == c.mother.mavze_id %}<span class="me-2"><b>{{ r.full_name }}</b> <span class="text-muted">({% t r.role_label %})</span></span>{% endif %}{% endfor %}</div>{% endif %}
+      {% if c.color_reasons %}<div class="small mt-1">{% for r in c.color_reasons|slice:":3" %}<span class="chip me-1 mb-1">{{ r|tl:lang }}</span>{% endfor %}</div>{% endif %}</div></div>
+  <div class="d-flex gap-2">
+    {% if can_edit %}<a href="{% url 'child_visit_create' c.id %}" class="btn btn-primary"><i class="bi bi-mic-fill"></i> {% t "Yangi ko'rik (ovoz / qo'lda)" %}</a>{% endif %}
+    {% if can_refer %}<button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#refModal"><i class="bi bi-send"></i> {% t "Yo'llanma berish" %}</button>{% endif %}
+  </div>
+</div></div>
+
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#t-sum">{% t "Umumiy" %}</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-vac">{% t "Emlash kalendari" %}</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-vis">{% t "Ko'riklar va kasallik tarixi" %} <span class="badge text-bg-light border">{{ visits|length }}</span></button></li>
+  {% if plan %}<li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-plan">{% t "Kuzatuv rejasi" %}</button></li>{% endif %}
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-al">{% t "Signal va yo'llanmalar" %}</button></li>
+</ul>
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="t-sum"><div class="row g-3">
+    <div class="col-lg-5"><div class="card h-100"><div class="card-body"><dl class="kv">
+      <dt>Vazn / bo'y</dt><dd>{{ c.birth_weight }} g / {{ c.birth_height|default:"—" }} sm</dd>
+      <dt>Apgar</dt><dd>{{ c.apgar_1|default:"—" }}/{{ c.apgar_5|default:"—" }}</dd>
+      <dt>{% t "Hafta" %}</dt><dd>{{ c.gestational_age_at_birth|default:"—" }}</dd>
+      <dt>{% t "Keyingi ko'rik" %}</dt><dd>{{ c.next_visit_date|date:"d.m.Y"|default:"—" }}</dd>
+      <dt>{% t "Bot uchun raqam" %}</dt><dd>{{ c.mother.phone }} {% if c.mother.telegram_chat_id %}<span class="zone zone-green zone-sm"><i class="bi bi-telegram"></i> {% t "ulangan" %}</span>{% else %}<span class="chip">{% t "ulanmagan" %}</span>{% endif %}</dd>
+    </dl></div></div></div>
+    <div class="col-lg-7"><div class="row g-3">
+      {% if last %}<div class="col-12"><div class="card"><div class="card-header">{{ last.visit_date|date:"d.m.Y" }} · {{ last.get_visit_type_display }}{% zone last.final_color True %}</div>
+        <div class="card-body"><div class="row g-2 text-center">
+          <div class="col-3"><div class="small-label">g</div><div class="fw-semibold">{{ last.weight|default:"—" }}</div></div>
+          <div class="col-3"><div class="small-label">sm</div><div class="fw-semibold">{{ last.height|default:"—" }}</div></div>
+          <div class="col-3"><div class="small-label">bosh</div><div class="fw-semibold">{{ last.head_circ|default:"—" }}</div></div>
+          <div class="col-3"><div class="small-label">t°</div><div class="fw-semibold">{{ last.temperature|default:"—" }}</div></div></div>
+          {% if last.diagnosis %}<div class="small mt-3"><span class="text-muted">{% t "Xulosa" %}:</span> {{ last.diagnosis }}</div>{% endif %}</div></div></div>{% endif %}
+      {% if chart.weight|length > 1 %}<div class="col-12"><div class="card"><div class="card-body"><div class="small-label">{% t "Vazn dinamikasi, g" %}</div><div style="height:170px"><canvas id="wChart"></canvas></div></div></div></div>{% endif %}
+    </div></div>
+  </div></div>
+
+  <div class="tab-pane fade" id="t-vac"><div class="card"><div class="table-responsive"><table class="table">
+    <thead><tr><th>{% t "Vaksina" %}</th><th>{% t "Yosh" %}</th><th>{% t "Reja" %}</th><th>{% t "Holat" %}</th><th></th></tr></thead><tbody>
+    {% for v in vaccinations %}<tr>
+      <td><b>{{ v.vaccine.code }}</b> <span class="small text-muted d-none d-md-inline">{{ v.vaccine.disease }}</span></td>
+      <td class="small">{{ v.vaccine.age_label }}</td><td class="small">{{ v.due_date|date:"d.m.Y" }}</td>
+      <td>{% if v.status == 'done' %}<span class="zone zone-green zone-sm"><i class="bi bi-check-circle-fill"></i> {{ v.done_date|date:"d.m.Y" }}</span>
+          {% elif v.status == 'overdue' %}<span class="zone zone-red zone-sm"><i class="bi bi-exclamation-octagon-fill"></i> {% t "Kechikdi" %}</span>
+          {% elif v.due_date <= today %}<span class="zone zone-yellow zone-sm"><i class="bi bi-clock"></i> {% t "Muddati keldi" %}</span>
+          {% else %}<span class="small text-muted">{% t "Rejada" %}</span>{% endif %}</td>
+      <td class="text-end">{% if can_vacc and v.status != 'done' and v.due_date <= today %}
+        <form method="post" action="{% url 'vaccination_done' v.id %}" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-outline-primary"><i class="bi bi-check2"></i> {% t "Bajarildi" %}</button></form>{% endif %}</td>
+    </tr>{% endfor %}</tbody></table></div></div></div>
+
+  <div class="tab-pane fade" id="t-vis"><div class="card"><div class="card-body"><div class="timeline">
+    {% for v in visits %}<div class="t-item c-{{ v.final_color }}">
+      <div class="d-flex justify-content-between"><div><b>{{ v.visit_date|date:"d.m.Y" }}</b> <span class="small text-muted">· {{ v.get_visit_type_display }} · {{ v.doctor|default:"" }}</span>{% if v.source != 'manual' %} <span class="chip"><i class="bi bi-mic"></i> AI</span>{% endif %} {% include "alerts/_mc.html" with o=v %}</div>{% zone v.final_color True %}</div>
+      <div class="small d-flex flex-wrap gap-3 mt-1">
+        {% if v.weight %}<span><span class="text-muted">g</span> <b>{{ v.weight }}</b></span>{% endif %}
+        {% if v.height %}<span><span class="text-muted">sm</span> <b>{{ v.height }}</b></span>{% endif %}
+        {% if v.head_circ %}<span><span class="text-muted">bosh</span> <b>{{ v.head_circ }}</b></span>{% endif %}
+        {% if v.temperature %}<span><span class="text-muted">t°</span> <b>{{ v.temperature }}</b></span>{% endif %}
+        {% if v.feeding %}<span><b>{{ v.get_feeding_display }}</b></span>{% endif %}
+        {% if v.jaundice %}<span class="zone zone-yellow zone-sm">sariqlik</span>{% endif %}{% if v.breathing_problem %}<span class="zone zone-red zone-sm">nafas</span>{% endif %}
+      </div>
+      {% if v.specialists %}<div class="small"><span class="text-muted">{% t "Mutaxassislar" %}:</span> {{ v.specialists|join:"; " }}</div>{% endif %}
+      {% if v.complaints %}<div class="small"><span class="text-muted">{% t "Shikoyat" %}:</span> {{ v.complaints }}</div>{% endif %}
+      {% if v.diagnosis %}<div class="small"><span class="text-muted">{% t "Xulosa" %}:</span> {{ v.diagnosis }}</div>{% endif %}
+      {% if v.recommendation %}<div class="small"><span class="text-muted">{% t "Tavsiya" %}:</span> {{ v.recommendation }}</div>{% endif %}
+    </div>{% empty %}<div class="empty">—</div>{% endfor %}
+  </div></div></div></div>
+
+  {% if plan %}<div class="tab-pane fade" id="t-plan"><div class="card"><div class="card-body"><div class="anc-steps">
+    {% for s in plan %}<div class="anc-step s-{{ s.status }}" title="{{ s.extra }}">
+      <div class="dot">{% if s.status == 'done' %}<i class="bi bi-check-lg"></i>{% elif s.status == 'missed' %}<i class="bi bi-x-lg"></i>{% elif s.status == 'due' %}<i class="bi bi-clock"></i>{% else %}{{ forloop.counter0 }}{% endif %}</div>
+      <div class="fw-semibold small">{{ s.label }}</div><div class="small text-muted">{{ s.date|date:"d.m.Y" }}</div>
+      {% if s.extra %}<span class="badge text-bg-light border mt-1" title="{{ s.extra }}"><i class="bi bi-person-badge"></i></span>{% endif %}
+    </div>{% endfor %}
+  </div><div class="small text-muted mt-3"><i class="bi bi-person-badge"></i> 1, 3, 6, 12: nevropatolog, ortoped-jarroh, oftalmolog, LOR · 3, 6, 12: qon/siydik</div></div></div></div>{% endif %}
+
+  <div class="tab-pane fade" id="t-al"><div class="row g-3">{% include "patients/_alerts_refs.html" %}</div></div>
+</div>
+{% endwith %}
+<div class="modal fade" id="refModal"><div class="modal-dialog"><form class="modal-content" method="post" action="{% url 'referral_create' %}">{% csrf_token %}
+  <input type="hidden" name="child" value="{{ c.id }}">
+  <div class="modal-header"><h5 class="modal-title">{% t "Yo'llanma berish" %}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body"><label class="form-label">{% t "Kimga" %}</label>
+    <select name="to_level" class="form-select mb-3">{% for v, l in referral_levels %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select>
+    <label class="form-label">{% t "Sabab" %}</label><textarea name="reason" class="form-control" rows="3" required>{{ c.color_reasons|join:"; " }}</textarea></div>
+  <div class="modal-footer"><button class="btn btn-primary">{% t "Yuborish" %}</button></div></form></div></div>
+{{ chart|json_script:"chart-data" }}
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const el = document.getElementById("wChart"); if (!el) return;
+  const d = JSON.parse(document.getElementById("chart-data").textContent);
+  const css = getComputedStyle(document.documentElement), c = (n) => css.getPropertyValue(n).trim();
+  new Chart(el, { type: "line", data: { labels: d.labels, datasets: [{ label: "g", data: d.weight, borderColor: c("--primary"), backgroundColor: c("--primary"), borderWidth: 2, pointRadius: 3.5, tension: .25 }] },
+    options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, interaction: { mode: "index", intersect: false },
+      scales: { x: { ticks: { color: c("--muted") }, grid: { display: false } }, y: { ticks: { color: c("--muted") }, grid: { color: c("--line") } } } } });
+})();
+</script>
+{% endblock %}

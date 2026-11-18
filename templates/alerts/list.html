@@ -1,0 +1,83 @@
+{% extends "base.html" %}{% load zones %}
+{% block title %}{% t "Signallar" %}{% endblock %}
+{% block page_title %}{% t "Avtomatik signallar" %}{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic"><i class="bi bi-stopwatch"></i></div>
+    <div><div class="l">{% t "O'rtacha javob vaqti" %}</div><div class="v">{% if metrics.resp_min is not None %}{{ metrics.resp_min }} <small class="fs-6 text-muted">{% t "daq." %}</small>{% else %}—{% endif %}</div>
+      <div class="s">{% t "signaldan «Ko'rildi»gacha" %}</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic green"><i class="bi bi-check2-all"></i></div>
+    <div><div class="l">{% t "Yopilgan signallar" %}</div><div class="v">{{ metrics.resolved_pct }}%</div>
+      <div class="s">{{ metrics.resolved }} / {{ metrics.total }}{% if metrics.close_hours is not None %} · {% t "o'rtacha" %} {{ metrics.close_hours }} {% t "soat" %}{% endif %}</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic red"><i class="bi bi-hospital"></i></div>
+    <div><div class="l">{% t "Qizil signallar: yotqizish / order" %}</div><div class="v">{{ metrics.red_hosp_pct }}%</div>
+      <div class="s">{% t "yopilgan qizil signallardan" %}</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic yellow"><i class="bi bi-arrow-up-circle"></i></div>
+    <div><div class="l">{% t "Javobsiz qolib ko'tarilgan" %}</div><div class="v">{{ metrics.escalated_pct }}%</div>
+      <div class="s">{{ metrics.escalated }} {% t "ta signal" %}</div></div></div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-xl-9">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+      <div class="small text-muted"><b>{% t "Sariq" %}</b> → {% t "Tuman/shahar shifokori" %} · <b>{% t "Qizil" %}</b> → OvaBMU</div>
+      <div class="btn-group btn-group-sm">
+        <a class="btn btn-light {% if status == 'open' %}active{% endif %}" href="?status=open">{% t "Faol" %}</a>
+        <a class="btn btn-light {% if status == 'new' %}active{% endif %}" href="?status=new">{% t "Yangi" %}</a>
+        <a class="btn btn-light {% if status == 'resolved' %}active{% endif %}" href="?status=resolved">{% t "Yopilgan" %}</a>
+        <a class="btn btn-light {% if status == 'all' %}active{% endif %}" href="?status=all">{% t "Hammasi" %}</a>
+      </div>
+    </div>
+    <div class="row g-3">
+    {% for a in alerts %}
+      <div class="col-lg-6"><div class="alert-item h-100 {% if a.to_color == 'red' %}to-red{% endif %} {% if a.status == 'new' %}is-new{% endif %}">
+        <div class="d-flex justify-content-between flex-wrap gap-2">
+          <div>{% zone a.from_color True %} → {% zone a.to_color True %} {% if a.escalated %}<span class="chip">⏫ {% t "ko'tarilgan" %}</span>{% endif %}</div>
+          <div class="small text-muted">{{ a.created_at|date:"d.m.Y H:i" }} · {{ a.get_level_display }}</div>
+        </div>
+        <div class="mt-2"><a href="{{ a.subject_url }}" class="fw-semibold fs-6">{{ a.subject_name }}</a> <span class="small text-muted">· {{ a.clinic.name }}, {{ a.district.name }}</span></div>
+        {% if a.changes %}<div class="small">📈 {{ a.changes }}</div>{% endif %}
+        <ul class="small mb-2 ps-3">{% for r in a.reasons|slice:":3" %}<li>{{ r|tl:lang }}</li>{% endfor %}</ul>
+        <div class="d-flex flex-wrap gap-2 align-items-center small">
+          <span class="badge {% if a.status == 'new' %}bg-danger{% elif a.status == 'seen' %}bg-secondary{% else %}bg-success{% endif %}">{{ a.get_status_display }}</span>
+          {% if a.seen_by %}<span class="text-muted"><i class="bi bi-eye"></i> {{ a.seen_by }} · {{ a.response_minutes }} {% t "daq." %}</span>{% endif %}
+        </div>
+        {% if a.status == 'resolved' %}
+          <div class="mt-2 p-2 rounded small" style="background:var(--z-green-bg)"><b>{% t a.get_action_type_display %}</b>{% if a.action_note %} — {{ a.action_note }}{% endif %}
+            <span class="text-muted">· {{ a.resolved_by|default:"" }}, {{ a.resolved_at|date:"d.m H:i" }}</span>
+            <div class="mt-1">{% include "alerts/_mc.html" with o=a %}</div></div>
+        {% else %}
+          <div class="mt-2 d-flex flex-wrap gap-1 align-items-start">
+            {% if a.status == 'new' and not is_clinic %}<form method="post" action="{% url 'alert_seen' a.id %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn btn-sm btn-light"><i class="bi bi-eye"></i> {% t "Ko'rildi" %}</button></form>{% endif %}
+            {% if a.can_resolve %}<form method="post" action="{% url 'alert_resolve' a.id %}" class="d-flex flex-wrap gap-1">{% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <select name="action_type" class="form-select form-select-sm" style="max-width:220px" required>
+                <option value="">— {% t "Chora turi" %} —</option>
+                {% for k, l in action_choices %}<option value="{{ k }}">{% t l %}</option>{% endfor %}</select>
+              <input name="note" class="form-control form-control-sm" placeholder="{% t "Izoh (ixtiyoriy)" %}" style="max-width:200px">
+              <button class="btn btn-sm btn-success"><i class="bi bi-check2"></i> {% t "Chora ko'rildi" %}</button>
+            </form>{% endif %}
+          </div>
+        {% endif %}
+      </div></div>
+    {% empty %}<div class="col-12"><div class="card empty"><i class="bi bi-check2-circle"></i>{% t "Faol signal yo'q" %}</div></div>{% endfor %}
+    </div>
+  </div>
+  <div class="col-xl-3"><div class="sticky-side">
+    <div class="card mb-3"><div class="card-header">{% t "Ona tasdig'i (botda)" %}<span class="sub">{{ mstats.sent }}</span></div>
+      <div class="card-body small">
+        <div class="d-flex justify-content-between mb-1"><span><i class="bi bi-person-check" style="color:var(--z-green)"></i> {% t "Ona tasdiqladi" %}</span><b>{{ mstats.yes }}</b></div>
+        <div class="d-flex justify-content-between mb-1"><span><i class="bi bi-flag-fill" style="color:var(--z-red)"></i> {% t "Ona rad etdi" %}</span><b style="color:var(--z-red)">{{ mstats.no }}</b></div>
+        <div class="d-flex justify-content-between"><span><i class="bi bi-hourglass-split"></i> {% t "Ona javobi kutilmoqda" %}</span><b>{{ mstats.wait }}</b></div>
+        <div class="text-muted mt-2">{% t "Shifokor yozgan chora onaga boradi — ona rad etsa, yuqori bosqich darhol biladi." %}</div>
+      </div></div>
+    <div class="card"><div class="card-header">{% t "Ko'rilgan choralar" %}<span class="sub">{{ metrics.resolved }}</span></div>
+    <div class="card-body">
+      {% for x in metrics.actions %}{% if x.n %}
+      <div class="mb-2"><div class="d-flex justify-content-between small"><span>{% t x.label %}</span><b>{{ x.n }} · {{ x.pct }}%</b></div>
+        <div class="progress" style="height:6px"><div class="progress-bar" style="width:{{ x.pct }}%;background:var(--primary)"></div></div></div>
+      {% endif %}{% empty %}{% endfor %}
+      {% if not metrics.resolved %}<div class="empty">—</div>{% endif %}
+    </div></div></div></div>
+</div>
+{% endblock %}

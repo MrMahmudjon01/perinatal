@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{% t "Umumiy ko'rinish" %}{% endblock %}
+{% block page_title %}{% t "Umumiy ko'rinish" %}{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-xl-9">
+    <div hx-get="{% url 'overview_live' %}" hx-trigger="every 15s, alerts-changed from:body">{% include "dashboard/_overview_live.html" %}</div>
+  </div>
+  <div class="col-xl-3">{% include "dashboard/_alert_card.html" %}</div>
+</div>
+{% endblock %}

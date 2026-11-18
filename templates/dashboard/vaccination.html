@@ -1,0 +1,41 @@
+{% extends "base.html" %}{% load humanize zones %}
+{% block title %}{% t "Emlash" %}{% endblock %}
+{% block page_title %}{% t "Emlash nazorati" %}{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-sm-4"><div class="card kpi"><div class="ic"><i class="bi bi-shield-check"></i></div>
+    <div><div class="l">{% t "Emlash bajarilishi" %}</div><div class="v">{{ kpi_vacc.vacc_pct }}%</div></div></div></div>
+  <div class="col-sm-4"><div class="card kpi"><div class="ic red"><i class="bi bi-exclamation-octagon"></i></div>
+    <div><div class="l">{% t "Kechikkan emlashlar" %}</div><div class="v">{{ overdue_count|intcomma }}</div></div></div></div>
+  <div class="col-sm-4"><div class="card kpi"><div class="ic yellow"><i class="bi bi-calendar-week"></i></div>
+    <div><div class="l">{% t "Shu hafta rejadagi emlashlar" %}</div><div class="v">{{ week_count|intcomma }}</div></div></div></div>
+</div>
+<ul class="nav nav-tabs mb-3" role="tablist">
+  <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#t-over">{% t "Kechikkan emlashlar" %} <span class="badge text-bg-danger">{{ overdue_count }}</span></button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-week">{% t "Shu hafta rejadagi emlashlar" %} <span class="badge text-bg-secondary">{{ week_count }}</span></button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-cov">{% t "Vaksinalar bo'yicha qamrov" %}</button></li>
+</ul>
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="t-over"><div class="card"><form method="post" action="{% url 'remind_missed' %}" class="d-flex justify-content-between align-items-center p-3 border-bottom gap-2 flex-wrap">{% csrf_token %}<input type="hidden" name="kind" value="vacc"><input type="hidden" name="all" value="1"><input type="hidden" name="next" value="{{ request.get_full_path }}"><span class="small text-muted"><i class="bi bi-info-circle"></i> {% t "Shifokor onaga botda xotirjam eslatma yuboradi: «emlashga kelmadingiz, iltimos keling»" %}</span><button class="btn btn-sm btn-primary" onclick="return confirm('{% t "Ro'yxatdagi hammaga eslatma yuborilsinmi?" %}')"><i class="bi bi-send"></i> {% t "Hammasiga eslatma" %}</button></form><div class="table-responsive"><table class="table table-hover">
+    <thead><tr><th>{% t "Ism" %}</th><th>{% t "Vaksina" %}</th><th>{% t "Reja" %}</th><th>{% t "Kechikish" %}</th><th>{% t "Poliklinika" %}</th><th>{% t "Telefon" %}</th><th></th></tr></thead><tbody>
+    {% for v in overdue %}<tr data-href="{% url 'child_detail' v.child_id %}" class="row-link">
+      <td><a href="{% url 'child_detail' v.child_id %}" class="fw-medium">{{ v.child.full_name }}</a> <span class="small text-muted">{{ v.child.age_label }}</span></td>
+      <td><b>{{ v.vaccine.code }}</b> <span class="small text-muted">{{ v.vaccine.disease }}</span></td>
+      <td>{{ v.due_date|date:"d.m.Y" }}</td><td style="color:var(--z-red)" class="fw-semibold">{{ v.due_date|days_ago }} {% t "kun" %}</td>
+      <td class="small">{{ v.child.mother.mavze.clinic.name }}</td><td class="small">{{ v.child.mother.phone }}</td><td class="text-end text-nowrap" onclick="event.stopPropagation()">{% if v.sent_at %}<span class="small text-muted"><i class="bi bi-check2"></i> {{ v.sent_at|date:"d.m H:i" }}</span> {% endif %}<span id="rm-vacc-{{ v.id }}"><button class="btn btn-sm btn-outline-primary" hx-post="{% url 'remind_missed' %}" hx-vals='{"kind": "vacc", "id": "{{ v.id }}"}' hx-target="#rm-vacc-{{ v.id }}" hx-swap="innerHTML"><i class="bi bi-telegram"></i> {% t "Eslatma" %}</button></span></td></tr>
+    {% empty %}<tr><td colspan="7" class="empty"><i class="bi bi-check2-circle"></i>—</td></tr>{% endfor %}
+    </tbody></table></div></div></div>
+  <div class="tab-pane fade" id="t-week"><div class="card"><div class="table-responsive"><table class="table table-hover">
+    <thead><tr><th>{% t "Sana" %}</th><th>{% t "Ism" %}</th><th>{% t "Vaksina" %}</th><th>{% t "Poliklinika" %}</th></tr></thead><tbody>
+    {% for v in week %}<tr data-href="{% url 'child_detail' v.child_id %}" class="row-link"><td class="fw-semibold">{{ v.due_date|date:"d.m.Y" }}</td>
+      <td><a href="{% url 'child_detail' v.child_id %}">{{ v.child.full_name }}</a></td><td><b>{{ v.vaccine.code }}</b> <span class="small text-muted">{{ v.vaccine.name }}</span></td>
+      <td class="small">{{ v.child.mother.mavze.clinic.name }}</td></tr>
+    {% empty %}<tr><td colspan="4" class="empty">—</td></tr>{% endfor %}
+    </tbody></table></div></div></div>
+  <div class="tab-pane fade" id="t-cov"><div class="card"><div class="table-responsive"><table class="table">
+    <thead><tr><th>{% t "Vaksina" %}</th><th class="text-end">{% t "Bajarildi" %}</th><th class="text-end">{% t "Jami" %}</th><th style="width:45%">{% t "Emlash %" %}</th></tr></thead><tbody>
+    {% for r in coverage %}<tr><td class="fw-semibold">{{ r.code }}</td><td class="text-end">{{ r.done|intcomma }}</td><td class="text-end">{{ r.total|intcomma }}</td>
+      <td><div class="d-flex align-items-center gap-2"><div class="progress flex-fill" style="height:8px"><div class="progress-bar" style="width:{{ r.pct }}%;background:{% if r.pct >= 95 %}var(--z-green){% elif r.pct >= 90 %}var(--z-yellow){% else %}var(--z-red){% endif %}"></div></div><b class="small">{{ r.pct }}%</b></div></td></tr>
+    {% endfor %}</tbody></table></div></div></div>
+</div>
+{% endblock %}

@@ -1,0 +1,7 @@
+<div class="card sticky-side">
+  <div class="card-header"><span><span class="live-dot"></span>{% t "Jonli signallar" %}</span>
+    <a href="{% url 'alert_list' %}" class="small fw-normal">{% t "Barchasi" %} →</a></div>
+  <div class="card-body" id="alert-panel" hx-get="{% url 'alert_panel' %}" hx-trigger="load, every 5s, alerts-changed from:body">
+    <div class="text-muted small">{% t "Yuklanmoqda..." %}</div>
+  </div>
+</div>

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{% t "Xodimlar" %}{% endblock %}
+{% block page_title %}{% t "Xodimlar" %}{% endblock %}
+{% block content %}
+{% if creds %}
+<div class="card mb-3" style="border:2px solid var(--z-green)"><div class="card-body d-flex flex-wrap gap-3 align-items-center">
+  <i class="bi bi-key-fill fs-2" style="color:var(--z-green)"></i>
+  <div class="flex-fill">
+    <div class="fw-semibold">{% if creds.action == 'created' %}{% t "Yangi xodim yaratildi" %}{% else %}{% t "Parol yangilandi" %}{% endif %}: {{ creds.name }}</div>
+    <div class="mt-1">{% t "Login" %}: <code class="fs-6" id="cr-u">{{ creds.username }}</code> &nbsp; {% t "Parol" %}: <code class="fs-6" id="cr-p">{{ creds.password }}</code></div>
+    <div class="small text-danger mt-1"><i class="bi bi-exclamation-triangle"></i> {% t "Parol faqat hozir ko'rsatiladi — nusxalab xodimga bering. Sahifa yangilansa qayta ko'rinmaydi." %}</div>
+  </div>
+  <button type="button" class="btn btn-success" onclick="navigator.clipboard.writeText('{% t "Login" %}: {{ creds.username|escapejs }}\n{% t "Parol" %}: {{ creds.password|escapejs }}');this.innerHTML='<i class=\'bi bi-check2\'></i>'"><i class="bi bi-clipboard"></i> {% t "Nusxalash" %}</button>
+</div></div>
+{% endif %}
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic"><i class="bi bi-people"></i></div>
+    <div><div class="l">{% t "Jami xodimlar" %}</div><div class="v">{{ kpi.total }}</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic green"><i class="bi bi-person-check"></i></div>
+    <div><div class="l">{% t "Faol" %}</div><div class="v">{{ kpi.active }}</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic red"><i class="bi bi-person-lock"></i></div>
+    <div><div class="l">{% t "Bloklangan" %}</div><div class="v">{{ kpi.blocked }}</div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card kpi"><div class="ic yellow"><i class="bi bi-hourglass"></i></div>
+    <div><div class="l">{% t "Hali kirmagan" %}</div><div class="v">{{ kpi.never }}</div></div></div></div>
+</div>
+
+<form class="card mb-3" method="get"><div class="card-body d-flex flex-wrap gap-2 align-items-center">
+  <input name="q" value="{{ q }}" class="form-control form-control-sm" style="max-width:240px" placeholder="{% t "Ism, login, telefon, poliklinika" %}">
+  {% if roles|length > 1 %}<select name="role" class="form-select form-select-sm" style="max-width:220px" onchange="this.form.submit()">
+    <option value="">{% t "Barcha rollar" %}</option>
+    {% for k, l in roles %}<option value="{{ k }}" {% if k == role %}selected{% endif %}>{% t l %}</option>{% endfor %}</select>{% endif %}
+  {% if districts %}<select name="district" class="form-select form-select-sm" style="max-width:200px" onchange="this.form.submit()">
+    <option value="">{% t "Barcha tumanlar" %}</option>
+    {% for d in districts %}<option value="{{ d.id }}" {% if d.id|stringformat:"s" == district %}selected{% endif %}>{{ d.name }}</option>{% endfor %}</select>{% endif %}
+  <select name="status" class="form-select form-select-sm" style="max-width:160px" onchange="this.form.submit()">
+    <option value="">{% t "Barcha holatlar" %}</option>
+    <option value="active" {% if status == 'active' %}selected{% endif %}>{% t "Faol" %}</option>
+    <option value="blocked" {% if status == 'blocked' %}selected{% endif %}>{% t "Bloklangan" %}</option></select>
+  <button class="btn btn-sm btn-light"><i class="bi bi-search"></i></button>
+  <span class="small text-muted">{% t "Topildi" %}: <b>{{ page.paginator.count }}</b></span>
+  {% if can_create %}<a href="{% url 'staff_create' %}" class="btn btn-sm btn-primary ms-auto"><i class="bi bi-person-plus"></i> {% t "Yangi xodim" %}</a>{% endif %}
+</div></form>
+
+<div class="card"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+  <thead><tr><th>{% t "Xodim" %}</th><th>{% t "Login" %}</th><th>{% t "Rol" %}</th><th>{% t "Hudud" %}</th><th>{% t "Telefon" %}</th><th>{% t "Oxirgi kirish" %}</th><th>{% t "Holat" %}</th><th class="text-end"></th></tr></thead><tbody>
+  {% for s in page %}<tr class="{% if not s.is_active %}text-muted{% endif %}">
+    <td><div class="fw-medium">{{ s.full_name|default:"—" }}</div><div class="small text-muted">{{ s.position }}</div></td>
+    <td><code>{{ s.username }}</code></td>
+    <td><span class="chip">{% t s.role_label %}</span>{% if s.mavze %}<div class="small text-muted">{{ s.mavze.name }}</div>{% endif %}</td>
+    <td class="small">{% if s.clinic %}{{ s.clinic.name }}<div class="text-muted">{{ s.clinic.district.name }}</div>{% elif s.district %}{{ s.district.name }} {% t "tumani" %}{% else %}{% t "Toshkent shahri" %}{% endif %}</td>
+    <td class="small text-nowrap">{{ s.phone|default:"—" }}</td>
+    <td class="small text-nowrap">{% if s.last_login %}{{ s.last_login|date:"d.m.Y H:i" }}{% else %}<span class="text-muted">{% t "kirmagan" %}</span>{% endif %}</td>
+    <td>{% if not s.is_active %}<span class="badge text-bg-danger">{% t "Bloklangan" %}</span>{% elif not s.has_pw %}<span class="badge text-bg-warning" title="{% t "Parol berilmagan — «Parolni tiklash» bosing" %}">{% t "Parol yo'q" %}</span>{% else %}<span class="badge text-bg-success">{% t "Faol" %}</span>{% endif %}</td>
+    <td class="text-end text-nowrap">{% if s.manageable %}
+      <a href="{% url 'staff_edit' s.id %}" class="btn btn-sm btn-light" title="{% t "Tahrirlash" %}"><i class="bi bi-pencil"></i></a>
+      <form method="post" action="{% url 'staff_reset' s.id %}" class="d-inline" onsubmit="return confirm('{% t "Yangi parol yaratilsinmi? Eski parol ishlamay qoladi." %}')">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button class="btn btn-sm btn-light" title="{% t "Parolni tiklash" %}"><i class="bi bi-key"></i></button></form>
+      <form method="post" action="{% url 'staff_toggle' s.id %}" class="d-inline">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+        {% if s.is_active %}<button class="btn btn-sm btn-outline-danger" title="{% t "Bloklash" %}"><i class="bi bi-lock"></i></button>
+        {% else %}<button class="btn btn-sm btn-outline-success" title="{% t "Faollashtirish" %}"><i class="bi bi-unlock"></i></button>{% endif %}</form>
+    {% elif s.id == user.id %}<span class="small text-muted">{% t "siz" %}</span>{% endif %}</td>
+  </tr>{% empty %}<tr><td colspan="8" class="empty">—</td></tr>{% endfor %}
+</tbody></table></div>
+{% if page.paginator.num_pages > 1 %}
+<div class="card-body d-flex justify-content-between align-items-center border-top">
+  <span class="small text-muted">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+  <div class="btn-group btn-group-sm">
+    {% if page.has_previous %}<a class="btn btn-light" href="?{{ qs_nopage }}&page=1">«</a><a class="btn btn-light" href="?{{ qs_nopage }}&page={{ page.previous_page_number }}">‹</a>{% endif %}
+    {% if page.has_next %}<a class="btn btn-light" href="?{{ qs_nopage }}&page={{ page.next_page_number }}">›</a><a class="btn btn-light" href="?{{ qs_nopage }}&page={{ page.paginator.num_pages }}">»</a>{% endif %}
+  </div></div>{% endif %}
+</div>
+<div class="small text-muted mt-3"><i class="bi bi-diagram-3"></i> {% if is_ovabmu %}{% t "OvaBMU tuman shifokorlari va OvaBMU mutaxassislarini boshqaradi. Poliklinika xodimlarini tuman shifokori yaratadi." %}{% else %}{% t "Tuman shifokori o'z tumanidagi poliklinika xodimlarini yaratadi, bloklaydi va parolini tiklaydi." %}{% endif %}</div>
+{% endblock %}
